@@ -305,7 +305,7 @@ struct switch_session_manager {
 	int busy;
 };
 
-extern struct switch_session_manager session_manager;
+extern struct switch_session_manager session_manager; 
 
 
 

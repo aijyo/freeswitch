@@ -2140,7 +2140,7 @@ static void parse_profile(avcodec_profile_t *aprofile, switch_xml_t profile)
 					} else if (!strcasecmp(argv[i], "TRUNCATED")) {
 #ifdef AV_CODEC_FLAG_TRUNCATED
 						flags |= AV_CODEC_FLAG_TRUNCATED;
-#endif
+#endif 
 					} else if (!strcasecmp(argv[i], "INTERLACED_DCT")) {
 #ifdef AV_CODEC_FLAG_INTERLACED_DCT
 						flags |= AV_CODEC_FLAG_INTERLACED_DCT;
@@ -2364,7 +2364,7 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_avcodec_load)
 	switch_core_codec_add_video_implementation(pool, codec_interface, 99, "H264", NULL,
 											   switch_h264_init, switch_h264_encode, switch_h264_decode, switch_h264_control, switch_h264_destroy);
 
-	SWITCH_ADD_CODEC(codec_interface, "H263 Video");
+	SWITCH_ADD_CODEC(codec_interface, "H263 Video"); 
 	switch_core_codec_add_video_implementation(pool, codec_interface, 34, "H263", NULL,
 											   switch_h264_init, switch_h264_encode, switch_h264_decode, switch_h264_control, switch_h264_destroy);
 

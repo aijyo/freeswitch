@@ -110,7 +110,7 @@ static int wait_for_mysql(mariadb_handle_t *handle, int status, int msec)
 	/*
 	On Windows, select() must be used due to a bug in WSAPoll()
 	which is supposed to be identical to BSD's poll(), but it is not,
-	"Windows 8 Bugs 309411 – WSAPoll does not report failed connections":
+	"Windows 8 Bugs 309411 ?WSAPoll does not report failed connections":
 	https://social.msdn.microsoft.com/Forums/windowsdesktop/en-US/18769abd-fca0-4d3c-9884-1a38ce27ae90/wsapoll-and-nonblocking-connects-to-nonexistent-ports?forum=wsk
 	*/
 
