@@ -35,7 +35,8 @@
 
 #include "mod_auth.h"
 
-#define AUTH_DTMF_FLAG (1 << 28)
+#define AUTH_DTMF_ACCOUNT (1)
+#define AUTH_DTMF_PASSWD (2)
 //#define AUTH_APP_USAGE "<realm>,<digits|~regex>,<string>[,<value>][,<dtmf target leg>][,<event target leg>]"
 #define AUTH_APP_USAGE ""
 
@@ -50,8 +51,20 @@ switch_frame_t* g_bk_image = NULL;
 switch_frame_t* g_auth_image = NULL;
 static char* auth_file_supported_formats[SWITCH_MAX_CODECS] = { 0 };
 
-typedef switch_status_t(*input_callback_function_t) (switch_core_session_t* session, void* input,
-	switch_input_type_t input_type, void* buf, unsigned int buflen);
+typedef struct auth_session_data {
+	switch_core_session_t* session;
+	uint32_t flags;
+	char* account;
+	char* passwd;
+} auth_session_data_t;
+
+typedef enum {
+	AUTH_INPUT_TYPE_ACCOUNT,
+	AUTH_INPUT_TYPE_PASSWD,
+} auth_dtmf_type_t;
+
+typedef switch_status_t(*input_callback_function_t) (switch_file_handle_t* vfh, void* input,
+	auth_dtmf_type_t input_type, void* buf, unsigned int buflen);
 
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
@@ -136,39 +149,72 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_frame_t* frame)
 {
 	switch_status_t status = SWITCH_STATUS_SUCCESS;
-	char* dtmf = NULL;
+	uint32_t center_x = 0;
+	uint32_t center_y = 0;
+	uint32_t width = 400;
+	uint32_t height = 100;
+
+	char* dtmf_account = NULL;
+	char* dtmf_passwd = NULL;
+	char buf[256] = { 0 };
 	switch_image_t* img = (switch_image_t*)handle->fd;
 	switch_image_t* auth_image = NULL;
-	switch_core_session_t* session = (switch_core_session_t*)handle->private_info;
-	switch_channel_t* channel = switch_core_session_get_channel(session);
+	switch_image_t* auth_account = NULL;
+	switch_image_t* auth_passwd = NULL;
+	auth_session_data_t* user_data = (auth_session_data_t*)handle->private_info;
 
-	switch_file_handle_t* vfh = (switch_file_handle_t*)switch_core_session_get_private_class(session, SWITCH_PVT_SECONDARY);
+	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
+	//switch_channel_t* channel = switch_core_session_get_channel(session);
 
-	if (vfh)
+	if (user_data)
 	{
-		switch_mutex_lock(vfh->flag_mutex);
 
-		if ((vfh->flags & AUTH_DTMF_FLAG)
-			&& vfh->file != NULL)
+		switch_core_media_lock_video_file(user_data->session, SWITCH_RW_READ);
+
+		if ((user_data->flags & AUTH_DTMF_ACCOUNT)
+			&& user_data->account != NULL)
 		{
-			dtmf = strdup(vfh->file);
-			vfh->flags &= ~AUTH_DTMF_FLAG;
+			dtmf_account = switch_mprintf("#cccccc:#142e55::20:acccount[%s]:", user_data->account);
+			user_data->flags &= ~AUTH_DTMF_ACCOUNT;
 		}
 
-		switch_mutex_unlock(vfh->flag_mutex);
+		if ((user_data->flags & AUTH_DTMF_PASSWD)
+			&& user_data->passwd != NULL)
+		{
+			dtmf_passwd = switch_mprintf("#cccccc:#142e55::20:passwd[%s]:", user_data->passwd);
+			user_data->flags &= ~AUTH_DTMF_PASSWD;
+		}
+		switch_core_media_unlock_video_file(user_data->session, SWITCH_RW_READ);
 	}
 
-	if (dtmf && dtmf[0] != '\0')
+	if (dtmf_account && dtmf_account[0] != '\0')
 	{
-		auth_image = switch_img_write_text_img(400, 400, SWITCH_TRUE, dtmf);
-		free(dtmf);
+		auth_account = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_account);
 	}
 
+	switch_safe_free(dtmf_account);
+	if (dtmf_passwd && dtmf_passwd[0] != '\0')
+	{
+		auth_passwd = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_passwd);
+	}
+	switch_safe_free(dtmf_passwd);
 	
-	if (auth_image)
+	if (auth_account)
 	{
-		switch_img_patch(img, auth_image, 0, 0);
+		center_x = img->w / 2;
+		center_y = img->h / 2;
+		switch_img_patch(img, auth_account, center_x - width/2, center_y - height/2 );
+		switch_img_free(&auth_account);
 	}
+
+	if (auth_passwd)
+	{
+		center_x = img->w / 2;
+		center_y = img->h / 2;
+		switch_img_patch(img, auth_passwd, center_x - width / 2, center_y + height/2);
+		switch_img_free(&auth_passwd);
+	}
+
 	frame->img = img;
 	return status;
 }
@@ -188,58 +234,57 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 //	switch_core_session_write_video_frame(session, &fr, SWITCH_IO_FLAG_FORCE, 0);
 //}
 
-switch_status_t input_callback_function(switch_core_session_t* session, void* input,
-	switch_input_type_t input_type, void* buf, unsigned int buflen)
+switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
+	auth_dtmf_type_t input_type, void* buf, unsigned int buflen)
 {
 	switch_status_t result = SWITCH_STATUS_SUCCESS;
 
 	char input_char = *((char*)input);
 	const char* input_buf = (const char*)buf;
 	unsigned int input_len = buflen;
+
+	auth_session_data_t* user_data = (auth_session_data_t*)vfh->private_info;
+	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
-
-	//if (switch_channel_test_flag(channel, CF_VIDEO)) 
-	//{
-	//	send_image(session, g_bk_image);
-	//}
-	//if (g_auth_image)
-	//{
-	//	switch_img_free(&g_auth_image);
-	//}
-	//g_auth_image = switch_img_write_text_img(400, 400, SWITCH_TRUE, buf);
-
-	switch_file_handle_t* vfh =  (switch_file_handle_t*)switch_core_session_get_private_class(session, SWITCH_PVT_SECONDARY);
 
 	if (vfh)
 	{
-		switch_mutex_lock(vfh->flag_mutex);
-		//SWITCH_FILE_OPEN
-		vfh->flags |= AUTH_DTMF_FLAG;
+		auth_session_data_t* user_data = (auth_session_data_t*)vfh->private_info;
+		switch_core_media_lock_video_file(session, SWITCH_RW_READ);
 
-		if (vfh->file && vfh->file[0] != '\0')
+		if (input_type == AUTH_INPUT_TYPE_ACCOUNT)
 		{
-			free(vfh->file);
+			user_data->flags |= AUTH_DTMF_ACCOUNT;
+
+			if (user_data->account && user_data->account[0] != '\0')
+			{
+				free(user_data->account);
+			}
+
+			user_data->account = strdup(input_buf);
+		}
+		else
+		{
+
+			user_data->flags |= AUTH_DTMF_PASSWD;
+
+
+			if (user_data->passwd && user_data->passwd[0] != '\0')
+			{
+				free(user_data->passwd);
+			}
+
+			user_data->passwd = strdup(input_buf);
 		}
 
-		vfh->file = strdup(input_buf);
-
-		switch_mutex_unlock(vfh->flag_mutex);
+		switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 	}
-	//switch_event_t* custom_event;
-	//switch_status_t status = switch_event_create(&custom_event, "CUSTOM_EVENT_TYPE");
-	//if (status == SWITCH_STATUS_SUCCESS) 
-	//{
-	//	switch_event_add_header_string(custom_event, SWITCH_STACK_BOTTOM, "user-input", "CUSTOM_EVENT_TYPE");
 
-	//	switch_event_fire(&custom_event);
-	//}
-	//switch_core_media_lock_video_file(session, SWITCH_RW_READ);
-	//switch_channel_set_variable(channel, "new_dtmf", buf);
-	//switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 	return result;
 }
 
-static switch_status_t collect_input(switch_core_session_t* session,
+static switch_status_t collect_input(switch_file_handle_t* vfh,
+	auth_dtmf_type_t input_type,
 	char* buf,
 	switch_size_t buflen,
 	switch_size_t maxdigits,
@@ -247,8 +292,11 @@ static switch_status_t collect_input(switch_core_session_t* session,
 	uint32_t first_timeout, uint32_t digit_timeout, 
 	uint32_t abs_timeout, input_callback_function_t callback)
 {
-	switch_size_t i = 0, x = strlen(buf);
+	auth_session_data_t* user_data = (auth_session_data_t*)vfh->private_info;
+	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
+
+	switch_size_t i = 0, x = strlen(buf);
 	switch_status_t status = SWITCH_STATUS_FALSE;
 	switch_time_t started = 0, digit_started = 0;
 	uint32_t abs_elapsed = 0, digit_elapsed = 0;
@@ -259,10 +307,7 @@ static switch_status_t collect_input(switch_core_session_t* session,
 	switch_codec_t codec = { 0 };
 	int sval = 0;
 	const char* var;
-	{
 
-		//write_frame =
-	}
 	// already exist?
 	if (x >= buflen || x >= maxdigits) {
 		return SWITCH_STATUS_FALSE;
@@ -409,7 +454,7 @@ static switch_status_t collect_input(switch_core_session_t* session,
 
 				if (callback)
 				{
-					callback(session, (void*)&dtmf, SWITCH_INPUT_TYPE_DTMF, buf, x);
+					callback(vfh, (void*)&dtmf, input_type, buf, x);
 				}
 
 				if (x >= buflen || x >= maxdigits) 
@@ -464,7 +509,8 @@ SWITCH_STANDARD_APP(conference_function)
 	int cur = 0;
 	int maxCount = 100;
 	char* imagePath = "C:\\Users\\Administrator\\Desktop\\001.png";
-	char buf[256] = { 0 };
+	char buf_account[256] = { 0 };
+	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
 
 	do
@@ -495,7 +541,12 @@ SWITCH_STANDARD_APP(conference_function)
 		g_bk_image = switch_img_read_png(bk_image, SWITCH_IMG_FMT_I420);
 
 		result = auth_file_open(session, "auth", "", &vfh);
-		switch_core_session_set_private_class(session, (void*)&vfh, SWITCH_PVT_SECONDARY);
+		auth_session_data_t user_data = { 0 };
+		user_data.session = session;
+		user_data.flags = AUTH_DTMF_ACCOUNT;
+		vfh.private_info = (void*)&user_data;
+
+		//switch_core_session_set_private_class(session, (void*)&user_data, SWITCH_PVT_SECONDARY);
 		//switch_core_session_set_private_class(session, (void*)&vfh, SWITCH_PVT_PRIMARY);
 
 		if (result)
@@ -506,9 +557,15 @@ SWITCH_STANDARD_APP(conference_function)
 
 		//if (!(smh = session->media_handle)) 
 		char terminator = ' ';
-		result = collect_input(session, buf, 256, 10, "#", &terminator
+		auth_dtmf_type_t input_type = AUTH_INPUT_TYPE_ACCOUNT;
+		result = collect_input(&vfh, input_type, buf_account, 256, 10, "#", &terminator
 			, 10000000, 100000, 0, input_callback_function);
 		//send_image_response(session, imagePath);
+
+		user_data.flags = AUTH_DTMF_PASSWD;
+		input_type = AUTH_INPUT_TYPE_PASSWD;
+		result = collect_input(&vfh, input_type, buf_passwd, 256, 10, "#", &terminator
+			, 10000000, 100000, 0, input_callback_function);
 
 		switch_core_media_set_video_file(session, NULL, SWITCH_RW_READ);
 
