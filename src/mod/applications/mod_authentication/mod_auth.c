@@ -597,15 +597,15 @@ SWITCH_STANDARD_APP(conference_function)
 		//if (!(smh = session->media_handle)) 
 		char terminator = ' ';
 		auth_dtmf_type_t input_type = AUTH_INPUT_TYPE_ACCOUNT;
-		result = collect_input(&vfh, input_type, buf_account, 256, 10, "#", &terminator
-			, 10000000, 100000, 0, input_callback_function);
+		result = collect_input(&vfh, input_type, buf_account, 256, 50, "#", &terminator
+			, 300000, 200000, 0, input_callback_function);
 		//send_image_response(session, imagePath);
 		switch_channel_set_variable(channel, "conference_id", buf_account);
 
 		user_data.flags = AUTH_DTMF_PASSWD;
 		input_type = AUTH_INPUT_TYPE_PASSWD;
-		result = collect_input(&vfh, input_type, buf_passwd, 256, 10, "#", &terminator
-			, 10000000, 100000, 0, input_callback_function);
+		result = collect_input(&vfh, input_type, buf_passwd, 256, 50, "#", &terminator
+			, 300000, 200000, 0, input_callback_function);
 		switch_channel_set_variable(channel, "conference_passwd", buf_passwd);
 
 		switch_core_media_set_video_file(session, NULL, SWITCH_RW_READ);
@@ -624,7 +624,7 @@ SWITCH_STANDARD_APP(conference_function)
 		}
 
 		//const char* tmp_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhNGYwYjQwOS00NTYwLTQzYTQtYjZlMi05NmNkNTRjMjNlYjAiLCJpc3MiOiJ3aGFsZW9uLW9uZSIsImV4cCI6MTY5NDUzODQ3NCwiaWF0IjoxNjk0NTAyNDc0fQ.hOAPOU3wzotwFXrHmPJmpZr0sniDgUuDEK79agyACVh5x1sOq1vaiG5Fm1i21aTC0hNVO6kWrTwIpytRYsQDPw";
-		result = auth_conference_join(session, token);
+		result = auth_conference_join(session, buf_account, buf_passwd, token);
 
 	} while (FALSE);
 

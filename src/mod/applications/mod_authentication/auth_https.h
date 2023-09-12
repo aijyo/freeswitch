@@ -9,6 +9,7 @@ switch_status_t curl_initialize(long flags);
 switch_status_t curl_uninitialize();
 
 const char* auth_session_create(switch_core_session_t* session, const char* clientId);
-switch_status_t auth_conference_join(switch_core_session_t* session, const char* token);
+switch_status_t auth_conference_join(switch_core_session_t* session, const char* account
+	, const char* passwd, const char* token);
 
 #endif

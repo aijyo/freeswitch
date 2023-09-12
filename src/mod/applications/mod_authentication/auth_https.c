@@ -305,15 +305,16 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 //		"message" : "SESSION_REQUIRED",
 //		"result" : null
 //}
-switch_status_t auth_conference_join(switch_core_session_t* session, const char* token)
+switch_status_t auth_conference_join(switch_core_session_t* session, const char* meetingId
+	, const char* passwd, const char* token)
 {
 	switch_status_t result = SWITCH_STATUS_FALSE;
 	struct response_data rd = { 0 };
 	char* jsonstr = NULL;
 	char* ssl_cacert = NULL;
-	char* meetingId = "8003289905";
-	char* passwd = "586617";
-	char* inviteCode = "5f22794e08774f2a8a28fa066745f849";
+	//char* meetingId = "8003289905";
+	//char* passwd = "586617";
+	//char* inviteCode = "5f22794e08774f2a8a28fa066745f849";
 	switch_curl_slist_t* headers = NULL;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
 
