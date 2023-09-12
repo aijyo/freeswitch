@@ -30,10 +30,20 @@
  * mod_av -- FS Video Codec / File Format using libav.org
  *
  */
+#include <stdio.h>
+#include <stdint.h>
+
+#if defined(_WIN32) || defined(_WIN64)
+#include <windows.h>
+#else
+#include <time.h>
+#endif
 
 #include <switch.h>
+#include <switch_curl.h>
 
 #include "mod_auth.h"
+#include "auth_https.h"
 
 #define AUTH_DTMF_ACCOUNT (1)
 #define AUTH_DTMF_PASSWD (2)
@@ -68,14 +78,42 @@ typedef switch_status_t(*input_callback_function_t) (switch_file_handle_t* vfh, 
 
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
-
+//
+//#ifdef WIN32
+//	// free certificate pointers previously loaded
+//	sslUnLoadWindowsCACertificate();
+//#endif
+	//switch_curl_destroy();
 	return SWITCH_STATUS_SUCCESS;
+}
+
+
+static uint64_t auth_timestamp()
+{
+	uint64_t timestamp = 0;
+#if defined(_WIN32) || defined(_WIN64)
+	FILETIME file_time;
+	GetSystemTimeAsFileTime(&file_time);
+
+	// Convert FILETIME to 64-bit timestamp (100-nanosecond intervals since January 1, 1601)
+	timestamp = ((int64_t)file_time.dwHighDateTime << 32) | (int64_t)file_time.dwLowDateTime;
+	timestamp /= 10; // Convert to microseconds
+	timestamp -= 11644473600000000LL; // Convert to Unix epoch (January 1, 1970)
+#else
+	struct timespec ts;
+	clock_gettime(CLOCK_REALTIME, &ts);
+
+	// Convert timespec to 64-bit timestamp (nanoseconds since January 1, 1970)
+	timestamp = (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
+#endif
+
+	return timestamp;
 }
 
 static switch_status_t auth_file_open(switch_core_session_t* session, const char* modname
 	, const char* file, switch_file_handle_t* vfh)
 {
-	switch_status_t status = SWITCH_STATUS_SUCCESS;
+	switch_status_t result = SWITCH_STATUS_SUCCESS;
 
 	do
 	{
@@ -97,18 +135,18 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 		vfh->private_info = (void*)session;
 		if ((vfh->file_interface = switch_loadable_module_get_file_interface(name, NULL)) == 0) {
 			switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "Invalid file format [%s] for [%s]!\n", modname, file);
-			status = SWITCH_STATUS_FALSE;
+			result = SWITCH_STATUS_FALSE;
 			break;
 		}
 	} while (FALSE);
 
-	return status;
+	return result;
 }
 
 static switch_status_t auth_file_close(switch_core_session_t* session, const char* modname
 	, const char* file, switch_file_handle_t* vfh)
 {
-	switch_status_t status = SWITCH_STATUS_SUCCESS;
+	switch_status_t result = SWITCH_STATUS_SUCCESS;
 
 	if (vfh)
 	{
@@ -135,7 +173,7 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 		switch_mutex_destroy(vfh->flag_mutex);
 	}
 
-	return status;
+	return result;
 }
 
 //// B线程中监听事件并执行逻辑
@@ -148,7 +186,7 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 // write handle image to frame
 static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_frame_t* frame)
 {
-	switch_status_t status = SWITCH_STATUS_SUCCESS;
+	switch_status_t result = SWITCH_STATUS_SUCCESS;
 	uint32_t center_x = 0;
 	uint32_t center_y = 0;
 	uint32_t width = 400;
@@ -216,7 +254,7 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	}
 
 	frame->img = img;
-	return status;
+	return result;
 }
 
 //static switch_status_t send_image(switch_core_session_t* session, switch_image_t* image)
@@ -297,7 +335,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 	switch_channel_t* channel = switch_core_session_get_channel(session);
 
 	switch_size_t i = 0, x = strlen(buf);
-	switch_status_t status = SWITCH_STATUS_FALSE;
+	switch_status_t result = SWITCH_STATUS_FALSE;
 	switch_time_t started = 0, digit_started = 0;
 	uint32_t abs_elapsed = 0, digit_elapsed = 0;
 	uint32_t eff_timeout = 0;
@@ -400,7 +438,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 			// input timeout
 			if (abs_elapsed >= abs_timeout) 
 			{
-				status = SWITCH_STATUS_TIMEOUT;
+				result = SWITCH_STATUS_TIMEOUT;
 				break;
 			}
 		}
@@ -417,7 +455,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 			// input timeout
 			if (digit_elapsed >= eff_timeout) 
 			{
-				status = SWITCH_STATUS_TIMEOUT;
+				result = SWITCH_STATUS_TIMEOUT;
 				break;
 			}
 		}
@@ -471,8 +509,8 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 		}
 		else 
 		{
-			status = switch_core_session_read_frame(session, &read_frame, SWITCH_IO_FLAG_NONE, 0);
-			if (!SWITCH_READ_ACCEPTABLE(status)) 
+			result = switch_core_session_read_frame(session, &read_frame, SWITCH_IO_FLAG_NONE, 0);
+			if (!SWITCH_READ_ACCEPTABLE(result)) 
 			{
 				break;
 			}
@@ -498,7 +536,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 		switch_img_free(&g_bk_image);
 		g_bk_image = NULL;
 	}
-	return status;
+	return result;
 }
 
 SWITCH_STANDARD_APP(conference_function)
@@ -512,6 +550,7 @@ SWITCH_STANDARD_APP(conference_function)
 	char buf_account[256] = { 0 };
 	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
+	const char* token = NULL;
 
 	do
 	{
@@ -561,13 +600,30 @@ SWITCH_STANDARD_APP(conference_function)
 		result = collect_input(&vfh, input_type, buf_account, 256, 10, "#", &terminator
 			, 10000000, 100000, 0, input_callback_function);
 		//send_image_response(session, imagePath);
+		switch_channel_set_variable(channel, "conference_id", buf_account);
 
 		user_data.flags = AUTH_DTMF_PASSWD;
 		input_type = AUTH_INPUT_TYPE_PASSWD;
 		result = collect_input(&vfh, input_type, buf_passwd, 256, 10, "#", &terminator
 			, 10000000, 100000, 0, input_callback_function);
+		switch_channel_set_variable(channel, "conference_passwd", buf_passwd);
 
 		switch_core_media_set_video_file(session, NULL, SWITCH_RW_READ);
+
+
+		auth_file_close(session, modname, "", &vfh);
+
+		switch_memory_pool_t* pool = switch_core_session_get_pool(session);
+		long long timestamp = auth_timestamp();
+		const char* clientId = switch_core_sprintf(pool, "sip-test-0001_%lld", timestamp);
+		token = auth_session_create(session, clientId);
+
+		if (!token)
+		{
+			break;
+		}
+
+		auth_conference_join(session, token);
 
 		result = SWITCH_STATUS_SUCCESS;
 	} while (FALSE);
@@ -577,8 +633,8 @@ SWITCH_STANDARD_APP(conference_function)
 		switch_img_free(&g_bk_image);
 		g_bk_image = NULL;
 	}
-	auth_file_close(session, modname, "", &vfh);
 
+	switch_safe_free(token);
 	return result;
 }
 
@@ -587,7 +643,11 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	switch_api_interface_t *api_interface = NULL;
 	switch_application_interface_t* app_interface = NULL;
 	switch_file_interface_t* file_interface;
-
+	//switch_curl_easy_init();
+//
+//#ifdef WIN32
+//	sslLoadWindowsCACertificate();
+//#endif
 	//av_log_set_callback(log_callback);
 	//av_log_set_level(AV_LOG_INFO);
 

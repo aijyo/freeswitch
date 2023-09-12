@@ -554,7 +554,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_switch_core_db", "test
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "test_switch_ivr_originate", "tests\unit\test_switch_ivr_originate.2017.vcxproj", "{69A7464A-9B0D-4804-A108-835229DACF58}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_authentication", "src\mod\applications\mod_authentication\mod_authentication.2017.vcxproj", "{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mod_auth", "src\mod\applications\mod_authentication\mod_authentication.2017.vcxproj", "{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -10408,8 +10408,8 @@ Global
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|ARM64.Build.0 = Debug-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|Win32.ActiveCfg = Debug-x264|Win32
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|Win32.Build.0 = Debug-x264|Win32
-		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|x64.ActiveCfg = Debug-openh264|x64
-		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|x64.Build.0 = Debug-openh264|x64
+		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|x64.ActiveCfg = Debug|x64
+		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug|x64.Build.0 = Debug|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug-openh264|ARM.ActiveCfg = Debug-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug-openh264|ARM.Build.0 = Debug-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Debug-openh264|ARM64.ActiveCfg = Debug-openh264|x64
@@ -10432,8 +10432,8 @@ Global
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|ARM64.Build.0 = Release-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|Win32.ActiveCfg = Release-x264|Win32
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|Win32.Build.0 = Release-x264|Win32
-		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|x64.ActiveCfg = Release-openh264|x64
-		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|x64.Build.0 = Release-openh264|x64
+		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|x64.ActiveCfg = Release|x64
+		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release|x64.Build.0 = Release|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release-openh264|ARM.ActiveCfg = Release-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release-openh264|ARM.Build.0 = Release-openh264|x64
 		{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}.Release-openh264|ARM64.ActiveCfg = Release-openh264|x64
