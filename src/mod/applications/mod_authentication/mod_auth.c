@@ -551,11 +551,11 @@ SWITCH_STANDARD_APP(conference_function)
 	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
 	const char* token = NULL;
+	switch_core_session_t* s = session;
+	switch_channel_t* channel = switch_core_session_get_channel(session);
 
 	do
 	{
-		switch_core_session_t* s = session;
-		switch_channel_t* channel = switch_core_session_get_channel(session);
 		if (!switch_channel_test_flag(channel, CF_VIDEO))
 		{
 			break;
@@ -623,9 +623,9 @@ SWITCH_STANDARD_APP(conference_function)
 			break;
 		}
 
-		auth_conference_join(session, token);
+		//const char* tmp_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhNGYwYjQwOS00NTYwLTQzYTQtYjZlMi05NmNkNTRjMjNlYjAiLCJpc3MiOiJ3aGFsZW9uLW9uZSIsImV4cCI6MTY5NDUzODQ3NCwiaWF0IjoxNjk0NTAyNDc0fQ.hOAPOU3wzotwFXrHmPJmpZr0sniDgUuDEK79agyACVh5x1sOq1vaiG5Fm1i21aTC0hNVO6kWrTwIpytRYsQDPw";
+		result = auth_conference_join(session, token);
 
-		result = SWITCH_STATUS_SUCCESS;
 	} while (FALSE);
 
 	if (g_bk_image)
@@ -635,6 +635,12 @@ SWITCH_STANDARD_APP(conference_function)
 	}
 
 	switch_safe_free(token);
+
+	if (result != SWITCH_STATUS_SUCCESS)
+	{
+		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_DEBUG, "auth failed: %d\n",
+			result);
+	}
 	return result;
 }
 

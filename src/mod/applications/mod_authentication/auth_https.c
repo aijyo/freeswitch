@@ -75,10 +75,11 @@ switch_status_t curl_uninitialize()
 static char* auth_token_from_json(const char* jsonstr)
 {
 	char* result = NULL;
+	ks_json_t* json = NULL;
 	do
 	{
 
-		ks_json_t* json = ks_json_parse(jsonstr);
+		json = ks_json_parse(jsonstr);
 		if (!json)
 		{
 			break;
@@ -103,9 +104,70 @@ static char* auth_token_from_json(const char* jsonstr)
 			break;
 		}
 
-		result = token;
+		result = strdup(token);
 	} while (FALSE);
 
+	if (json)
+	{
+		ks_json_delete(&json);
+	}
+	return result;
+}
+
+
+static switch_status_t auth_update_session_info(switch_core_session_t* session, const char* jsonstr)
+{
+	switch_status_t result = SWITCH_STATUS_FALSE;
+	switch_channel_t* channel = switch_core_session_get_channel(session);
+	ks_json_t* json = NULL;
+	do
+	{
+
+		json = ks_json_parse(jsonstr);
+		if (!json)
+		{
+			break;
+		}
+
+		BOOL suc = ks_json_get_object_bool(json, "success", FALSE);
+
+		if (!suc)
+		{
+			break;
+		}
+		ks_json_t* result_obj = ks_json_get_object_item(json, "result");
+
+		if (!result_obj)
+		{
+			break;
+		}
+		ks_json_t* participant_obj = ks_json_get_object_item(result_obj, "participant");
+		ks_json_t* rtc_obj = ks_json_get_object_item(result_obj, "rtc");
+
+		if (!participant_obj || !rtc_obj)
+		{
+			break;
+		}
+
+		char* clientId = ks_json_get_object_string(participant_obj, "clientId", "");
+		char* displayName = ks_json_get_object_string(participant_obj, "displayName", "");
+
+		switch_channel_set_variable(channel, "iris_clientId", clientId);
+		switch_channel_set_variable(channel, "iris_displayName", displayName);
+
+		char* meetingToken = ks_json_get_object_string(rtc_obj, "meetingToken", "");
+		char* clientToken = ks_json_get_object_string(rtc_obj, "clientToken", "");
+
+		switch_channel_set_variable(channel, "iris_meetingToken", meetingToken);
+		switch_channel_set_variable(channel, "iris_clientToken", clientToken);
+
+		result = SWITCH_STATUS_SUCCESS;
+	} while (FALSE);
+
+	if (json)
+	{
+		ks_json_delete(&json);
+	}
 	return result;
 }
 //curl - X 'POST' \
@@ -144,13 +206,13 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 			break;
 		}
 
-		content = switch_core_sprintf(pool, "{\"clientId\": %s}", clientId);
+		content = switch_core_sprintf(pool, "{\"clientId\": \"%s\"}", clientId);
 
 		ssl_cacert = switch_core_sprintf(pool, "%s%s", SWITCH_GLOBAL_dirs.certs_dir, "/cacert.pem");
 
 		//curl_easy_setopt(curl, CURLOPT_URL, "https://dev-one-api.whaleon.naver.com/v2/meetings/001/join");
-		switch_curl_easy_setopt(curl, CURLOPT_URL, "https://dev-one-api.whaleon.naver.com/v2/session");
-		//switch_curl_easy_setopt(curl, CURLOPT_URL, "https://one-api.whaleon.naver.com/v2/session");
+		//switch_curl_easy_setopt(curl, CURLOPT_URL, "https://dev-one-api.whaleon.naver.com/v2/session");
+		switch_curl_easy_setopt(curl, CURLOPT_URL, "https://one-api.whaleon.naver.com/v2/session");
 		//switch_curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
 		switch_curl_easy_setopt(curl, CURLOPT_POST, 1);
 
@@ -185,27 +247,24 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 
 		if (http_code == 200)
 		{
-			result = SWITCH_STATUS_SUCCESS;
+
+			char* token = auth_token_from_json(rd.data);
+			if (!token)
+			{
+				break;
+			}
+
+			//switch_channel_t* channel = switch_core_session_get_channel(session);
+			//switch_channel_set_variable(channel, "auth_token", token);
+
+			result = token;
+			//result = SWITCH_STATUS_SUCCESS;
 		}
 		else
 		{
-			result = SWITCH_STATUS_FALSE;
+			//result = SWITCH_STATUS_FALSE;
 		}
 
-
-		char* token = auth_token_from_json(rd.data);
-
-
-
-		if (!token)
-		{
-			break;
-		}
-
-		switch_channel_t* channel = switch_core_session_get_channel(session);
-		switch_channel_set_variable(channel, "auth_token", token);
-
-		result = strdup(token);
 
 	} while (FALSE);
 
@@ -248,12 +307,12 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 //}
 switch_status_t auth_conference_join(switch_core_session_t* session, const char* token)
 {
-	switch_status_t result = SWITCH_STATUS_SUCCESS;
+	switch_status_t result = SWITCH_STATUS_FALSE;
 	struct response_data rd = { 0 };
 	char* jsonstr = NULL;
 	char* ssl_cacert = NULL;
-	char* meetingId = "8003289471";
-	char* passwd = "283482";
+	char* meetingId = "8003289905";
+	char* passwd = "586617";
 	char* inviteCode = "5f22794e08774f2a8a28fa066745f849";
 	switch_curl_slist_t* headers = NULL;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
@@ -270,10 +329,10 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 
 		//const char* token = switch_channel_get_variable(channel, "auth_token");
 
-		const char* uri = switch_core_sprintf(pool, "https://dev-one-api.whaleon.naver.com/v2/meetings/%s/join", meetingId);
+		const char* uri = switch_core_sprintf(pool, "https://one-api.whaleon.naver.com/v2/meetings/%s/join", meetingId);
 		const char* auth_header = switch_core_sprintf(pool, "X-Auth-Token: %s", token);
-		const char* content = switch_core_sprintf(pool, "{ \"password\": %s, \"inviteCode\" : %s, \"displayName\" : \"Tremendous whale\", \"profileImageUrl\" : \"string\", \"overlayFrame\" : \"string\", \"enableBreakoutRoomsFeature\" : false, \"mediaServer\" : \"PK\" }"
-			, passwd, inviteCode);
+		const char* content = switch_core_sprintf(pool, "{ \"password\": %s, \"inviteCode\" :null, \"displayName\" : \"Tremendous whale\", \"profileImageUrl\" : \"string\", \"overlayFrame\" : \"REMOVE\", \"enableBreakoutRoomsFeature\" : false, \"mediaServer\" : \"I:1.0\" }"
+			, passwd);
 		//ssl_cacert = switch_core_sprintf(pool, "%s%s", SWITCH_GLOBAL_dirs.certs_dir, "/cacert.pem");
 
 		curl_easy_setopt(curl, CURLOPT_URL, uri);
@@ -309,12 +368,10 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 
 		if (http_code == 200)
 		{
-			result = SWITCH_STATUS_SUCCESS;
+			auth_update_session_info(session, rd.data);
 		}
-		else
-		{
-			result = SWITCH_STATUS_FALSE;
-		}
+
+		result = SWITCH_STATUS_SUCCESS;
 
 	} while (FALSE);
 
