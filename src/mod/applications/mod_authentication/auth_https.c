@@ -371,6 +371,10 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 		{
 			auth_update_session_info(session, rd.data);
 		}
+		else
+		{
+			break;
+		}
 
 		result = SWITCH_STATUS_SUCCESS;
 

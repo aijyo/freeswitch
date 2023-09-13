@@ -76,6 +76,58 @@ typedef enum {
 typedef switch_status_t(*input_callback_function_t) (switch_file_handle_t* vfh, void* input,
 	auth_dtmf_type_t input_type, void* buf, unsigned int buflen);
 
+
+typedef struct auth_config
+{
+	switch_memory_pool_t* pool;
+	char* bk_image;
+
+} auth_config_t;
+
+
+static auth_config_t gconfig;
+
+static switch_status_t do_config(auth_config_t* config)
+{
+	char* cf = "auth.conf";
+	switch_xml_t cfg, xml, param, settings, profiles;
+	switch_status_t status = SWITCH_STATUS_SUCCESS;
+	int max_urls;
+	switch_time_t default_max_age_sec;
+
+	if (!(xml = switch_xml_open_cfg(cf, &cfg, NULL))) {
+		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "open of %s failed\n", cf);
+		return SWITCH_STATUS_TERM;
+	}
+
+	/* set default config */
+	/* get params */
+	settings = switch_xml_child(cfg, "settings");
+	if (settings) {
+		for (param = switch_xml_child(settings, "param"); param; param = param->next) {
+			char* var = (char*)switch_xml_attr_soft(param, "name");
+			char* val = (char*)switch_xml_attr_soft(param, "value");
+			if (!strcasecmp(var, "bk_image")) {
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting bk_image to %s\n", val);
+				config->bk_image = switch_core_strdup(config->pool, val);
+			}
+			else {
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_WARNING, "Unsupported param: %s\n", var);
+			}
+		}
+	}
+
+	if (zstr(config->bk_image)) {
+		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "bk_image must not be empty\n");
+		status = SWITCH_STATUS_TERM;
+		goto done;
+	}
+done:
+	switch_xml_free(xml);
+
+	return status;
+}
+
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
 //
@@ -546,7 +598,6 @@ SWITCH_STANDARD_APP(conference_function)
 	BOOL done = FALSE;
 	int cur = 0;
 	int maxCount = 100;
-	char* imagePath = "C:\\Users\\Administrator\\Desktop\\001.png";
 	char buf_account[256] = { 0 };
 	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
@@ -575,7 +626,7 @@ SWITCH_STANDARD_APP(conference_function)
 
 		switch_channel_wait_for_flag(channel, CF_VIDEO_READY, SWITCH_TRUE, 10000, NULL);
 
-		const char* bk_image = "C:\\Users\\Administrator\\Desktop\\001.png";
+		const char* bk_image = gconfig.bk_image;
 		//g_bk_image = switch_img_read_from_file(bk_image, SWITCH_IMG_FMT_ARGB);
 		g_bk_image = switch_img_read_png(bk_image, SWITCH_IMG_FMT_I420);
 
@@ -649,16 +700,11 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	switch_api_interface_t *api_interface = NULL;
 	switch_application_interface_t* app_interface = NULL;
 	switch_file_interface_t* file_interface;
-	//switch_curl_easy_init();
-//
-//#ifdef WIN32
-//	sslLoadWindowsCACertificate();
-//#endif
-	//av_log_set_callback(log_callback);
-	//av_log_set_level(AV_LOG_INFO);
 
-	//av_log(NULL, AV_LOG_INFO, "%s %d\n", "av_log callback installed, level=", av_log_get_level());
+	memset(&gconfig, 0, sizeof(gconfig));
+	gconfig.pool = pool;
 
+	do_config(&gconfig);
 	/* connect my internal structure to the blank pointer passed to me */
 	*module_interface = switch_loadable_module_create_module_interface(pool, modname);
 
@@ -683,7 +729,6 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	// APP
 	SWITCH_ADD_APP(app_interface, "auth", "Conference auth App", "Conference auth App Description"
 		, conference_function, AUTH_APP_USAGE, SAF_NONE);
-
 
 	return SWITCH_STATUS_SUCCESS;
 }
