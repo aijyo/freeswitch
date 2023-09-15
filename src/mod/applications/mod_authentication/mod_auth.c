@@ -1,35 +1,4 @@
-/*
- * FreeSWITCH Modular Media Switching Software Library / Soft-Switch Application
- * Copyright (C) 2005-2015, Anthony Minessale II <anthm@freeswitch.org>
- *
- * Version: MPL 1.1
- *
- * The contents of this file are subject to the Mozilla Public License Version
- * 1.1 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS" basis,
- * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- * for the specific language governing rights and limitations under the
- * License.
- *
- * The Original Code is FreeSWITCH Modular Media Switching Software Library / Soft-Switch Application
- *
- * The Initial Developer of the Original Code is
- * Seven Du <dujinfang@gmail.com>
- * Portions created by the Initial Developer are Copyright (C)
- * the Initial Developer. All Rights Reserved.
- *
- * Contributor(s):
- *
- * Seven Du <dujinfang@gmail.com>
- * Anthony Minessale <anthm@freeswitch.org>
- * Jakub Karolczyk <jakub.karolczyk@signalwire.com>
- *
- * mod_av -- FS Video Codec / File Format using libav.org
- *
- */
+
 #include <stdio.h>
 #include <stdint.h>
 
@@ -56,10 +25,6 @@ SWITCH_MODULE_DEFINITION(mod_auth, mod_auth_load, mod_auth_shutdown, NULL);
 
 SWITCH_STANDARD_APP(conference_function);
 
-struct mod_av_globals mod_av_globals;
-switch_frame_t* g_bk_image = NULL;
-switch_frame_t* g_auth_image = NULL;
-static char* auth_file_supported_formats[SWITCH_MAX_CODECS] = { 0 };
 
 typedef struct auth_session_data {
 	switch_core_session_t* session;
@@ -81,11 +46,12 @@ typedef struct auth_config
 {
 	switch_memory_pool_t* pool;
 	char* bk_image;
-
 } auth_config_t;
 
 
 static auth_config_t gconfig;
+static switch_frame_t* g_bk_image = NULL;
+static char* auth_file_supported_formats[SWITCH_MAX_CODECS] = { 0 };
 
 static switch_status_t do_config(auth_config_t* config)
 {
@@ -137,29 +103,6 @@ SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 //#endif
 	//switch_curl_destroy();
 	return SWITCH_STATUS_SUCCESS;
-}
-
-
-static uint64_t auth_timestamp()
-{
-	uint64_t timestamp = 0;
-#if defined(_WIN32) || defined(_WIN64)
-	FILETIME file_time;
-	GetSystemTimeAsFileTime(&file_time);
-
-	// Convert FILETIME to 64-bit timestamp (100-nanosecond intervals since January 1, 1601)
-	timestamp = ((int64_t)file_time.dwHighDateTime << 32) | (int64_t)file_time.dwLowDateTime;
-	timestamp /= 10; // Convert to microseconds
-	timestamp -= 11644473600000000LL; // Convert to Unix epoch (January 1, 1970)
-#else
-	struct timespec ts;
-	clock_gettime(CLOCK_REALTIME, &ts);
-
-	// Convert timespec to 64-bit timestamp (nanoseconds since January 1, 1970)
-	timestamp = (int64_t)ts.tv_sec * 1000000000LL + (int64_t)ts.tv_nsec;
-#endif
-
-	return timestamp;
 }
 
 static switch_status_t auth_file_open(switch_core_session_t* session, const char* modname
@@ -538,9 +481,19 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 					return SWITCH_STATUS_SUCCESS;
 				}
 
-
-				buf[x++] = dtmf.digit;
-				buf[x] = '\0';
+				if (dtmf.digit == '*' && x > 0)
+				{
+					buf[--x] = '\0';
+				}
+				else if(dtmf.digit == '*' && x < 1)
+				{
+					// ignore
+				}
+				else
+				{
+					buf[x++] = dtmf.digit;
+					buf[x] = '\0';
+				}
 
 				if (callback)
 				{
@@ -665,8 +618,8 @@ SWITCH_STANDARD_APP(conference_function)
 		auth_file_close(session, modname, "", &vfh);
 
 		switch_memory_pool_t* pool = switch_core_session_get_pool(session);
-		long long timestamp = auth_timestamp();
-		const char* clientId = switch_core_sprintf(pool, "sip-test-0001_%lld", timestamp);
+		uint64_t timestamp = switch_micro_time_now();
+		const char* clientId = switch_core_sprintf(pool, "sip-test-0001_%"SWITCH_UINT64_T_FMT"", timestamp);
 		token = auth_session_create(session, clientId);
 
 		if (!token)

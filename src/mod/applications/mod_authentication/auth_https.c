@@ -56,22 +56,6 @@ switch_status_t curl_uninitialize()
 	return result;
 }
 
-//SWITCH_DECLARE(switch_CURL*) switch_curl_easy_init(void);
-//SWITCH_DECLARE(switch_CURLcode) switch_curl_easy_perform(switch_CURL* handle);
-//SWITCH_DECLARE(switch_CURLcode) switch_curl_easy_getinfo(switch_CURL* curl, switch_CURLINFO info, ...);
-//SWITCH_DECLARE(void) switch_curl_easy_cleanup(switch_CURL* handle);
-//SWITCH_DECLARE(switch_curl_slist_t*) switch_curl_slist_append(switch_curl_slist_t* list, const char* string);
-//SWITCH_DECLARE(void) switch_curl_slist_free_all(switch_curl_slist_t* list);
-//SWITCH_DECLARE(switch_CURLcode) switch_curl_easy_setopt(CURL* handle, switch_CURLoption option, ...);
-//SWITCH_DECLARE(const char*) switch_curl_easy_strerror(switch_CURLcode errornum);
-//SWITCH_DECLARE(void) switch_curl_init(void);
-//SWITCH_DECLARE(void) switch_curl_destroy(void);
-//SWITCH_DECLARE(switch_status_t) switch_curl_process_mime(switch_event_t* event, switch_CURL* curl_handle, switch_curl_mime** mimep);
-//SWITCH_DECLARE(void) switch_curl_mime_free(switch_curl_mime** mimep);
-//SWITCH_DECLARE(switch_CURLcode) switch_curl_easy_setopt_mime(switch_CURL* curl_handle, switch_curl_mime* mime);
-//#define switch_curl_easy_setopt curl_easy_setopt
-
-
 static char* auth_token_from_json(const char* jsonstr)
 {
 	char* result = NULL;
