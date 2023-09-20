@@ -1,6 +1,12 @@
 <configuration name="auth.conf" description="auth Config">
   <settings>
-    <param name="bk_image" value="$${base_dir}/images/auth_bk_image.png"/>
+    <param name="account_bk_image" value="$${base_dir}/images/auth_account_bk_image.png"/>
+    <param name="passwd_bk_image" value="$${base_dir}/images/auth_passwd_bk_image.png"/>
+    <param name="auth_text_format" value="#ffcccc:#daffff::20:%s:"/>
+    <param name="text_x" value="0"/>
+    <param name="text_y" value="0"/>
+    <param name="text_w" value="400"/>
+    <param name="text_h" value="100"/>
   </settings>
 
 </configuration>

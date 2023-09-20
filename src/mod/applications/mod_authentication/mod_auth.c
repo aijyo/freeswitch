@@ -31,6 +31,8 @@ typedef struct auth_session_data {
 	uint32_t flags;
 	char* account;
 	char* passwd;
+	switch_frame_t* account_bk_image;
+	switch_frame_t* passwd_bk_image;
 } auth_session_data_t;
 
 typedef enum {
@@ -45,12 +47,21 @@ typedef switch_status_t(*input_callback_function_t) (switch_file_handle_t* vfh, 
 typedef struct auth_config
 {
 	switch_memory_pool_t* pool;
-	char* bk_image;
+	uint32_t text_x;
+	uint32_t text_y;
+	uint32_t text_w;
+	uint32_t text_h;
+
+	char* str_auth_text_format;
+	char* str_account_bk_image;
+	char* str_passwd_bk_image;
+	switch_frame_t* account_bk_image;
+	switch_frame_t* passwd_bk_image;
 } auth_config_t;
 
 
 static auth_config_t gconfig;
-static switch_frame_t* g_bk_image = NULL;
+
 static char* auth_file_supported_formats[SWITCH_MAX_CODECS] = { 0 };
 
 static switch_status_t do_config(auth_config_t* config)
@@ -60,6 +71,7 @@ static switch_status_t do_config(auth_config_t* config)
 	switch_status_t status = SWITCH_STATUS_SUCCESS;
 	int max_urls;
 	switch_time_t default_max_age_sec;
+
 
 	if (!(xml = switch_xml_open_cfg(cf, &cfg, NULL))) {
 		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "open of %s failed\n", cf);
@@ -73,9 +85,40 @@ static switch_status_t do_config(auth_config_t* config)
 		for (param = switch_xml_child(settings, "param"); param; param = param->next) {
 			char* var = (char*)switch_xml_attr_soft(param, "name");
 			char* val = (char*)switch_xml_attr_soft(param, "value");
-			if (!strcasecmp(var, "bk_image")) {
-				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting bk_image to %s\n", val);
-				config->bk_image = switch_core_strdup(config->pool, val);
+			if (!strcasecmp(var, "account_bk_image"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting account_bk_image to %s\n", val);
+				config->str_account_bk_image = switch_core_strdup(config->pool, val);
+			}
+			else if (!strcasecmp(var, "passwd_bk_image"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting passwd_bk_image to %s\n", val);
+				config->str_passwd_bk_image = switch_core_strdup(config->pool, val);
+			}
+			else if (!strcasecmp(var, "auth_text_format"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting passwd_bk_image to %s\n", val);
+				config->str_auth_text_format = switch_core_strdup(config->pool, val);
+			}
+			else if (!strcasecmp(var, "text_x"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting text_x to %s\n", val);
+				config->text_x = atoi(val);
+			}
+			else if (!strcasecmp(var, "text_y"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting text_y to %s\n", val);
+				config->text_y = atoi(val);
+			}
+			else if (!strcasecmp(var, "text_w"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting text_w to %s\n", val);
+				config->text_w = atoi(val);
+			}
+			else if (!strcasecmp(var, "text_h"))
+			{
+				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Setting text_h to %s\n", val);
+				config->text_h = atoi(val);
 			}
 			else {
 				switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_WARNING, "Unsupported param: %s\n", var);
@@ -83,7 +126,8 @@ static switch_status_t do_config(auth_config_t* config)
 		}
 	}
 
-	if (zstr(config->bk_image)) {
+	if (zstr(config->str_account_bk_image) || zstr(config->str_passwd_bk_image))
+	{
 		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "bk_image must not be empty\n");
 		status = SWITCH_STATUS_TERM;
 		goto done;
@@ -96,12 +140,19 @@ done:
 
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
-//
-//#ifdef WIN32
-//	// free certificate pointers previously loaded
-//	sslUnLoadWindowsCACertificate();
-//#endif
-	//switch_curl_destroy();
+	if (gconfig.account_bk_image)
+	{
+		switch_img_free(&gconfig.account_bk_image);
+		gconfig.account_bk_image = NULL;
+	}
+	if (gconfig.passwd_bk_image)
+	{
+		switch_img_free(&gconfig.passwd_bk_image);
+		gconfig.passwd_bk_image = NULL;
+	}
+
+	switch_safe_free(gconfig.str_account_bk_image);
+	switch_safe_free(gconfig.str_passwd_bk_image);
 	return SWITCH_STATUS_SUCCESS;
 }
 
@@ -112,9 +163,6 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 
 	do
 	{
-		switch_image_t* new_image = NULL;
-
-		switch_img_copy(g_bk_image, &new_image);
 		//switch_memory_pool_t* pool = switch_get_memory;
 		//vfh->modname = switch_core_strdup(session, modname);
 		const char* modname = "mod_auth";
@@ -122,7 +170,8 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 		switch_memory_pool_t* pool = switch_core_session_get_pool(session);
 		vfh->modname = modname;
 		vfh->flags = SWITCH_FILE_OPEN | SWITCH_FILE_FLAG_VIDEO;
-		vfh->fd = (switch_file_t*)new_image;
+		//vfh->fd = (switch_file_t*)new_image;
+
 		
 		
 		switch_mutex_init(&vfh->flag_mutex, SWITCH_MUTEX_NESTED, pool);
@@ -171,80 +220,77 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 	return result;
 }
 
-//// B线程中监听事件并执行逻辑
-//static switch_status_t custom_event_handler(switch_event_t* event) {
-//	// 处理自定义事件的逻辑，在B线程中执行
-//	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Custom event received in B thread\n");
-//	return SWITCH_STATUS_SUCCESS;
-//}
-
 // write handle image to frame
 static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_frame_t* frame)
 {
 	switch_status_t result = SWITCH_STATUS_SUCCESS;
 	uint32_t center_x = 0;
 	uint32_t center_y = 0;
-	uint32_t width = 400;
-	uint32_t height = 100;
+	uint32_t width = gconfig.text_w? gconfig.text_w : 400;
+	uint32_t height = gconfig.text_h? gconfig.text_h : 100;
 
+	BOOL is_account = FALSE;
 	char* dtmf_account = NULL;
 	char* dtmf_passwd = NULL;
 	char buf[256] = { 0 };
-	switch_image_t* img = (switch_image_t*)handle->fd;
 	switch_image_t* auth_image = NULL;
 	switch_image_t* auth_account = NULL;
 	switch_image_t* auth_passwd = NULL;
 	auth_session_data_t* user_data = (auth_session_data_t*)handle->private_info;
 
 	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
+	switch_image_t* img = NULL;
+	BOOL is_account_step = FALSE;
+	char* text_format = gconfig.str_auth_text_format ? gconfig.str_auth_text_format : "#daffff:transparent::20:%s:";
 	//switch_channel_t* channel = switch_core_session_get_channel(session);
 
 	if (user_data)
 	{
 
 		switch_core_media_lock_video_file(user_data->session, SWITCH_RW_READ);
+		is_account_step = !(user_data->flags & AUTH_DTMF_PASSWD);
+		img = (switch_image_t*)(is_account_step ? user_data->account_bk_image : user_data->passwd_bk_image);
 
-		if ((user_data->flags & AUTH_DTMF_ACCOUNT)
+		if (is_account_step
 			&& user_data->account != NULL)
 		{
-			dtmf_account = switch_mprintf("#cccccc:#142e55::20:acccount[%s]:", user_data->account);
-			user_data->flags &= ~AUTH_DTMF_ACCOUNT;
+			//fg bg  font_face fontsz  text
+			dtmf_account = switch_mprintf(text_format, user_data->account);
+			//user_data->flags &= ~AUTH_DTMF_ACCOUNT;
+			is_account = TRUE;
 		}
-
-		if ((user_data->flags & AUTH_DTMF_PASSWD)
+		else if (!is_account_step
 			&& user_data->passwd != NULL)
 		{
-			dtmf_passwd = switch_mprintf("#cccccc:#142e55::20:passwd[%s]:", user_data->passwd);
-			user_data->flags &= ~AUTH_DTMF_PASSWD;
+			dtmf_passwd = switch_mprintf(text_format, user_data->passwd);
+			//user_data->flags &= ~AUTH_DTMF_PASSWD;
 		}
 		switch_core_media_unlock_video_file(user_data->session, SWITCH_RW_READ);
 	}
 
-	if (dtmf_account && dtmf_account[0] != '\0')
+	if (is_account && dtmf_account && dtmf_account[0] != '\0')
 	{
 		auth_account = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_account);
 	}
 
 	switch_safe_free(dtmf_account);
-	if (dtmf_passwd && dtmf_passwd[0] != '\0')
+	if (!is_account && dtmf_passwd && dtmf_passwd[0] != '\0')
 	{
 		auth_passwd = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_passwd);
 	}
 	switch_safe_free(dtmf_passwd);
-	
-	if (auth_account)
+
+	center_x = gconfig.text_x? gconfig.text_x : (-20 + img->w / 2);
+	center_y = gconfig.text_y? gconfig.text_y : (img->h / 2);
+	if (is_account &&  auth_account)
 	{
-		center_x = img->w / 2;
-		center_y = img->h / 2;
 		switch_img_patch(img, auth_account, center_x - width/2, center_y - height/2 );
 		switch_img_free(&auth_account);
 	}
-
-	if (auth_passwd)
+	else if(!is_account && auth_passwd)
 	{
-		center_x = img->w / 2;
-		center_y = img->h / 2;
-		switch_img_patch(img, auth_passwd, center_x - width / 2, center_y + height/2);
+		//switch_img_patch(img, auth_passwd, center_x - width / 2, center_y + height/2);
+		switch_img_patch(img, auth_passwd, center_x - width / 2, center_y - height / 2);
 		switch_img_free(&auth_passwd);
 	}
 
@@ -328,6 +374,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 	auth_session_data_t* user_data = (auth_session_data_t*)vfh->private_info;
 	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
+	switch_bool_t is_account = input_type == AUTH_INPUT_TYPE_ACCOUNT;
 
 	switch_size_t i = 0, x = strlen(buf);
 	switch_status_t result = SWITCH_STATUS_FALSE;
@@ -422,6 +469,13 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 	{
 		digit_started = switch_micro_time_now();
 	}
+	{
+		switch_core_media_lock_video_file(session, SWITCH_RW_READ);
+
+		user_data->flags |= is_account ? AUTH_DTMF_ACCOUNT : AUTH_DTMF_PASSWD;
+
+		switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
+	}
 
 	while (switch_channel_ready(channel)) 
 	{
@@ -459,6 +513,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 		{
 			switch_dtmf_t dtmf = { 0 };
 			switch_size_t y;
+			switch_status_t end_status = SWITCH_STATUS_FALSE;
 
 			if (eff_timeout) 
 			{
@@ -478,7 +533,9 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 				{
 					*terminator = dtmf.digit;
 					switch_safe_free(abuf);
-					return SWITCH_STATUS_SUCCESS;
+					//return SWITCH_STATUS_SUCCESS;
+					end_status = SWITCH_STATUS_SUCCESS;
+					break;
 				}
 
 				if (dtmf.digit == '*' && x > 0)
@@ -503,8 +560,15 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 				if (x >= buflen || x >= maxdigits) 
 				{
 					switch_safe_free(abuf);
-					return SWITCH_STATUS_SUCCESS;
+					//return SWITCH_STATUS_SUCCESS;
+					end_status = SWITCH_STATUS_SUCCESS;
+					break;
 				}
+			}
+
+			if (end_status == SWITCH_STATUS_SUCCESS)
+			{
+				break;
 			}
 		}
 
@@ -529,6 +593,13 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 		}
 	}
 
+	{
+		switch_core_media_lock_video_file(session, SWITCH_RW_READ);
+
+		user_data->flags &= ~(is_account ? AUTH_DTMF_ACCOUNT : AUTH_DTMF_PASSWD);
+
+		switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
+	}
 	if (write_frame.codec) 
 	{
 		switch_core_codec_destroy(&codec);
@@ -536,11 +607,6 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 
 	switch_safe_free(abuf);
 
-	if (g_bk_image)
-	{
-		switch_img_free(&g_bk_image);
-		g_bk_image = NULL;
-	}
 	return result;
 }
 
@@ -555,6 +621,8 @@ SWITCH_STANDARD_APP(conference_function)
 	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
 	const char* token = NULL;
+	switch_image_t* new_account_image = NULL;
+	switch_image_t* new_passwd_image = NULL;
 	switch_core_session_t* s = session;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
 
@@ -579,23 +647,23 @@ SWITCH_STANDARD_APP(conference_function)
 
 		switch_channel_wait_for_flag(channel, CF_VIDEO_READY, SWITCH_TRUE, 10000, NULL);
 
-		const char* bk_image = gconfig.bk_image;
-		//g_bk_image = switch_img_read_from_file(bk_image, SWITCH_IMG_FMT_ARGB);
-		g_bk_image = switch_img_read_png(bk_image, SWITCH_IMG_FMT_I420);
-
 		result = auth_file_open(session, "auth", "", &vfh);
-		auth_session_data_t user_data = { 0 };
-		user_data.session = session;
-		user_data.flags = AUTH_DTMF_ACCOUNT;
-		vfh.private_info = (void*)&user_data;
-
-		//switch_core_session_set_private_class(session, (void*)&user_data, SWITCH_PVT_SECONDARY);
-		//switch_core_session_set_private_class(session, (void*)&vfh, SWITCH_PVT_PRIMARY);
 
 		if (result)
 		{
 			break;
 		}
+
+		switch_img_copy(gconfig.account_bk_image, &new_account_image);
+		switch_img_copy(gconfig.passwd_bk_image, &new_passwd_image);
+
+		auth_session_data_t user_data = { 0 };
+		user_data.session = session;
+		user_data.account_bk_image = (switch_file_t*)new_account_image;
+		user_data.passwd_bk_image = (switch_file_t*)new_passwd_image;
+
+		vfh.private_info = (void*)&user_data;
+
 		switch_core_media_set_video_file(session, &vfh, SWITCH_RW_READ);
 
 		//if (!(smh = session->media_handle)) 
@@ -606,7 +674,6 @@ SWITCH_STANDARD_APP(conference_function)
 		//send_image_response(session, imagePath);
 		switch_channel_set_variable(channel, "conference_id", buf_account);
 
-		user_data.flags = AUTH_DTMF_PASSWD;
 		input_type = AUTH_INPUT_TYPE_PASSWD;
 		result = collect_input(&vfh, input_type, buf_passwd, 256, 50, "#", &terminator
 			, 300000, 200000, 0, input_callback_function);
@@ -632,10 +699,15 @@ SWITCH_STANDARD_APP(conference_function)
 
 	} while (FALSE);
 
-	if (g_bk_image)
+	if (new_account_image)
 	{
-		switch_img_free(&g_bk_image);
-		g_bk_image = NULL;
+		switch_img_free(&new_account_image);
+		new_account_image = NULL;
+	}
+	if (new_passwd_image)
+	{
+		switch_img_free(&new_passwd_image);
+		new_passwd_image = NULL;
 	}
 
 	switch_safe_free(token);
@@ -658,6 +730,15 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	gconfig.pool = pool;
 
 	do_config(&gconfig);
+	if (gconfig.str_account_bk_image)
+	{
+		gconfig.account_bk_image = switch_img_read_png(gconfig.str_account_bk_image, SWITCH_IMG_FMT_I420);
+	}
+
+	if (gconfig.str_account_bk_image)
+	{
+		gconfig.passwd_bk_image = switch_img_read_png(gconfig.str_passwd_bk_image, SWITCH_IMG_FMT_I420);
+	}
 	/* connect my internal structure to the blank pointer passed to me */
 	*module_interface = switch_loadable_module_create_module_interface(pool, modname);
 
