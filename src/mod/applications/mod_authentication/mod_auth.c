@@ -16,6 +16,8 @@
 
 #define AUTH_DTMF_ACCOUNT (1)
 #define AUTH_DTMF_PASSWD (2)
+#define AUTH_DTMF_ACCOUNT_CHANGED (4)
+#define AUTH_DTMF_PASSWD_CHANGED (8)
 //#define AUTH_APP_USAGE "<realm>,<digits|~regex>,<string>[,<value>][,<dtmf target leg>][,<event target leg>]"
 #define AUTH_APP_USAGE ""
 
@@ -241,6 +243,7 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
 	switch_image_t* img = NULL;
 	BOOL is_account_step = FALSE;
+	BOOL is_data_changed = FALSE;
 	char* text_format = gconfig.str_auth_text_format ? gconfig.str_auth_text_format : "#daffff:transparent::20:%s:";
 	//switch_channel_t* channel = switch_core_session_get_channel(session);
 
@@ -249,6 +252,11 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 
 		switch_core_media_lock_video_file(user_data->session, SWITCH_RW_READ);
 		is_account_step = !(user_data->flags & AUTH_DTMF_PASSWD);
+		is_data_changed = user_data->flags & (AUTH_DTMF_ACCOUNT_CHANGED | AUTH_DTMF_PASSWD_CHANGED);
+
+		// clear flags
+		user_data->flags &= ~(AUTH_DTMF_ACCOUNT_CHANGED | AUTH_DTMF_PASSWD_CHANGED);
+
 		img = (switch_image_t*)(is_account_step ? user_data->account_bk_image : user_data->passwd_bk_image);
 
 		if (is_account_step
@@ -268,13 +276,13 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 		switch_core_media_unlock_video_file(user_data->session, SWITCH_RW_READ);
 	}
 
-	if (is_account && dtmf_account && dtmf_account[0] != '\0')
+	if (is_data_changed && is_account && dtmf_account && dtmf_account[0] != '\0')
 	{
 		auth_account = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_account);
 	}
 
 	switch_safe_free(dtmf_account);
-	if (!is_account && dtmf_passwd && dtmf_passwd[0] != '\0')
+	if (is_data_changed && !is_account && dtmf_passwd && dtmf_passwd[0] != '\0')
 	{
 		auth_passwd = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_passwd);
 	}
@@ -282,12 +290,12 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 
 	center_x = gconfig.text_x? gconfig.text_x : (-20 + img->w / 2);
 	center_y = gconfig.text_y? gconfig.text_y : (img->h / 2);
-	if (is_account &&  auth_account)
+	if (is_data_changed && is_account &&  auth_account)
 	{
 		switch_img_patch(img, auth_account, center_x - width/2, center_y - height/2 );
 		switch_img_free(&auth_account);
 	}
-	else if(!is_account && auth_passwd)
+	else if(is_data_changed && !is_account && auth_passwd)
 	{
 		//switch_img_patch(img, auth_passwd, center_x - width / 2, center_y + height/2);
 		switch_img_patch(img, auth_passwd, center_x - width / 2, center_y - height / 2);
@@ -333,7 +341,7 @@ switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 
 		if (input_type == AUTH_INPUT_TYPE_ACCOUNT)
 		{
-			user_data->flags |= AUTH_DTMF_ACCOUNT;
+			user_data->flags |= AUTH_DTMF_ACCOUNT_CHANGED;
 
 			if (user_data->account && user_data->account[0] != '\0')
 			{
@@ -345,7 +353,7 @@ switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 		else
 		{
 
-			user_data->flags |= AUTH_DTMF_PASSWD;
+			user_data->flags |= AUTH_DTMF_PASSWD_CHANGED;
 
 
 			if (user_data->passwd && user_data->passwd[0] != '\0')
