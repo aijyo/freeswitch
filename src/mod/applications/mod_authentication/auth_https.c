@@ -293,14 +293,14 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 //		"result" : null
 //}
 switch_status_t auth_conference_join(switch_core_session_t* session, const char* meetingId
-	, const char* passwd, const char* token)
+	, const char* str_passwd, const char* token)
 {
 	switch_status_t result = SWITCH_STATUS_FALSE;
 	struct response_data rd = { 0 };
 	char* jsonstr = NULL;
 	char* ssl_cacert = NULL;
 	//char* meetingId = "8003289905";
-	//char* passwd = "586617";
+	//char* str_passwd = "586617";
 	//char* inviteCode = "5f22794e08774f2a8a28fa066745f849";
 	switch_curl_slist_t* headers = NULL;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
@@ -320,7 +320,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 		const char* uri = switch_core_sprintf(pool, "https://one-api.whaleon.naver.com/v2/meetings/%s/join", meetingId);
 		const char* auth_header = switch_core_sprintf(pool, "X-Auth-Token: %s", token);
 		const char* content = switch_core_sprintf(pool, "{ \"password\":\"%s\", \"inviteCode\" :null, \"displayName\" : \"Tremendous whale\", \"profileImageUrl\" : \"string\", \"overlayFrame\" : \"REMOVE\", \"enableBreakoutRoomsFeature\" : false, \"mediaServer\" : \"I:1.0\" }"
-			, passwd);
+			, str_passwd);
 		//ssl_cacert = switch_core_sprintf(pool, "%s%s", SWITCH_GLOBAL_dirs.certs_dir, "/cacert.pem");
 
 		curl_easy_setopt(curl, CURLOPT_URL, uri);

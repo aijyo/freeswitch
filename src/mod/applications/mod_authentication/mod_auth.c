@@ -31,8 +31,10 @@ SWITCH_STANDARD_APP(conference_function);
 typedef struct auth_session_data {
 	switch_core_session_t* session;
 	uint32_t flags;
-	char* account;
-	char* passwd;
+	char str_account[32];
+	char str_passwd[32];
+	char str_account_present[32];
+	char str_passwd_present[32];
 	switch_frame_t* account_bk_image;
 	switch_frame_t* passwd_bk_image;
 } auth_session_data_t;
@@ -66,6 +68,69 @@ typedef struct auth_config
 static auth_config_t gconfig;
 
 static char* auth_file_supported_formats[SWITCH_MAX_CODECS] = { 0 };
+
+static switch_bool_t init_auth_session_data(auth_session_data_t* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+	memset(pThis, 0, sizeof(auth_session_data_t));
+	return result;
+}
+
+static switch_bool_t init_auth_config_data(auth_config_t* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+	memset(pThis, 0, sizeof(auth_session_data_t));
+	return result;
+}
+
+static void destroy_auth_session_data(auth_session_data_t* pThis)
+{
+	do
+	{
+		if (!pThis) break;
+
+		if (pThis->account_bk_image)
+		{
+			switch_img_free(&(pThis->account_bk_image));
+			pThis->account_bk_image = NULL;
+		}
+
+		if (pThis->passwd_bk_image)
+		{
+			switch_img_free(&(pThis->passwd_bk_image));
+			pThis->passwd_bk_image = NULL;
+		}
+
+		//switch_safe_free(pThis->str_account);
+		//switch_safe_free(pThis->str_passwd);
+		//switch_safe_free(pThis->str_account_present);
+		//switch_safe_free(pThis->str_passwd_present);
+	} while (SWITCH_FALSE);
+}
+
+static void destroy_auth_config(auth_config_t* pThis)
+{
+	do
+	{
+		if (!pThis) break;
+
+		if (pThis->account_bk_image)
+		{
+			switch_img_free(&(pThis->account_bk_image));
+			pThis->account_bk_image = NULL;
+		}
+
+		if (pThis->passwd_bk_image)
+		{
+			switch_img_free(&(pThis->passwd_bk_image));
+			pThis->passwd_bk_image = NULL;
+		}
+
+		switch_safe_free(pThis->str_auth_text_format);
+		switch_safe_free(pThis->str_account_bk_image);
+		switch_safe_free(pThis->str_passwd_bk_image);
+	} while (SWITCH_FALSE);
+}
 
 static switch_status_t do_config(auth_config_t* config)
 {
@@ -143,19 +208,7 @@ done:
 
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
-	if (gconfig.account_bk_image)
-	{
-		switch_img_free(&gconfig.account_bk_image);
-		gconfig.account_bk_image = NULL;
-	}
-	if (gconfig.passwd_bk_image)
-	{
-		switch_img_free(&gconfig.passwd_bk_image);
-		gconfig.passwd_bk_image = NULL;
-	}
-
-	switch_safe_free(gconfig.str_account_bk_image);
-	switch_safe_free(gconfig.str_passwd_bk_image);
+	destroy_auth_config(&gconfig);
 	return SWITCH_STATUS_SUCCESS;
 }
 
@@ -214,6 +267,34 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 
 	return result;
 }
+static void insert_spaces(char* input, char* output) 
+{
+	int input_len = strlen(input);
+	int output_len = input_len + (input_len / 3) + 1;
+
+	
+	output = (char*)malloc(output_len);
+
+	if (output) {
+		int j = 0;
+		for (int i = 0; i < input_len; i++) {
+			if (i > 0 && (i % 3 == 0)) {
+				output[j++] = ' ';
+			}
+			output[j++] = input[i];
+		}
+		output[j] = '\0';
+	}
+}
+void replace_with_asterisk(char* input, char ch) 
+{
+	int length = strlen(input); // 获取字符串的长度
+
+	for (int i = 0; i < length; i++)
+	{
+		input[i] = ch; // 将每个字符替换为 '*'
+	}
+}
 
 // write handle image to frame
 static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_frame_t* frame)
@@ -252,18 +333,22 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 
 		img = (switch_image_t*)(is_account_step ? user_data->account_bk_image : user_data->passwd_bk_image);
 
-		if (is_account_step
-			&& user_data->account != NULL)
+		if (is_data_changed && is_account_step
+			&& user_data->str_account != NULL)
 		{
+			//switch_safe_free(user_data->str_account_present);
+			//user_data->str_account_present = switch_mprintf("%.*s %.*s %s", 3, user_data->str_account
+			//	, 3, user_data->str_account+3
+			//	, user_data->str_account+6);
 			//fg bg  font_face fontsz  text
-			dtmf_account = switch_mprintf(text_format, user_data->account);
+			dtmf_account = switch_mprintf(text_format, user_data->str_account_present);
 			//user_data->flags &= ~AUTH_DTMF_ACCOUNT;
 			is_account = SWITCH_TRUE;
 		}
-		else if (!is_account_step
-			&& user_data->passwd != NULL)
+		else if (is_data_changed&& !is_account_step
+			&& user_data->str_passwd != NULL)
 		{
-			dtmf_passwd = switch_mprintf(text_format, user_data->passwd);
+			dtmf_passwd = switch_mprintf(text_format, user_data->str_passwd_present);
 			//user_data->flags &= ~AUTH_DTMF_PASSWD;
 		}
 		switch_core_media_unlock_video_file(user_data->session, SWITCH_RW_READ);
@@ -321,25 +406,33 @@ switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 		{
 			user_data->flags |= AUTH_DTMF_ACCOUNT_CHANGED;
 
-			if (user_data->account && user_data->account[0] != '\0')
-			{
-				free(user_data->account);
-			}
+			user_data->str_account[buflen-1] = input_char;
+			user_data->str_account[buflen] = '\0';
 
-			user_data->account = strdup(input_buf);
+			int prensent_len = strlen(user_data->str_account_present);
+			user_data->str_account_present[prensent_len] = input_char;
+			if (input_len == 3
+				|| input_len == 6)
+			{
+				int space_count = input_len / 3;
+				user_data->str_account_present[prensent_len+1] = ' ';
+				user_data->str_account_present[prensent_len+2] = '\0';
+			}
+			else
+			{
+				user_data->str_account_present[prensent_len+1] = '\0';
+			}
 		}
 		else
 		{
 
 			user_data->flags |= AUTH_DTMF_PASSWD_CHANGED;
 
+			user_data->str_passwd[buflen-1] = input_char;
+			user_data->str_passwd[buflen] = '\0';
+			user_data->str_passwd_present[buflen-1] = '*';
+			user_data->str_passwd_present[buflen] = '\0';
 
-			if (user_data->passwd && user_data->passwd[0] != '\0')
-			{
-				free(user_data->passwd);
-			}
-
-			user_data->passwd = strdup(input_buf);
 		}
 
 		switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
@@ -608,6 +701,7 @@ SWITCH_STANDARD_APP(conference_function)
 	switch_image_t* new_passwd_image = NULL;
 	switch_core_session_t* s = session;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
+	auth_session_data_t user_data = { 0 };
 
 	do
 	{
@@ -641,7 +735,6 @@ SWITCH_STANDARD_APP(conference_function)
 		switch_img_copy(gconfig.account_bk_image, &new_account_image);
 		switch_img_copy(gconfig.passwd_bk_image, &new_passwd_image);
 
-		auth_session_data_t user_data = { 0 };
 		user_data.session = session;
 		user_data.account_bk_image = (switch_file_t*)new_account_image;
 		user_data.passwd_bk_image = (switch_file_t*)new_passwd_image;
@@ -653,13 +746,13 @@ SWITCH_STANDARD_APP(conference_function)
 		//if (!(smh = session->media_handle)) 
 		char terminator = ' ';
 		auth_dtmf_type_t input_type = AUTH_INPUT_TYPE_ACCOUNT;
-		result = collect_input(&vfh, input_type, buf_account, 256, 50, "#", &terminator
+		result = collect_input(&vfh, input_type, buf_account, 256, 25, "#", &terminator
 			, 300000, 200000, 0, input_callback_function);
 		//send_image_response(session, imagePath);
 		switch_channel_set_variable(channel, "conference_id", buf_account);
 
 		input_type = AUTH_INPUT_TYPE_PASSWD;
-		result = collect_input(&vfh, input_type, buf_passwd, 256, 50, "#", &terminator
+		result = collect_input(&vfh, input_type, buf_passwd, 256, 25, "#", &terminator
 			, 300000, 200000, 0, input_callback_function);
 		switch_channel_set_variable(channel, "conference_passwd", buf_passwd);
 
@@ -683,17 +776,7 @@ SWITCH_STANDARD_APP(conference_function)
 
 	} while (SWITCH_FALSE);
 
-	if (new_account_image)
-	{
-		switch_img_free(&new_account_image);
-		new_account_image = NULL;
-	}
-	if (new_passwd_image)
-	{
-		switch_img_free(&new_passwd_image);
-		new_passwd_image = NULL;
-	}
-
+	destroy_auth_session_data(&user_data);
 	switch_safe_free(token);
 
 	if (result != SWITCH_STATUS_SUCCESS)
@@ -710,7 +793,7 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	switch_application_interface_t* app_interface = NULL;
 	switch_file_interface_t* file_interface;
 
-	memset(&gconfig, 0, sizeof(gconfig));
+	init_auth_config_data(&gconfig);
 	gconfig.pool = pool;
 
 	do_config(&gconfig);
