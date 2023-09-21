@@ -57,6 +57,7 @@ typedef struct auth_config
 	char* str_auth_text_format;
 	char* str_account_bk_image;
 	char* str_passwd_bk_image;
+
 	switch_frame_t* account_bk_image;
 	switch_frame_t* passwd_bk_image;
 } auth_config_t;
@@ -174,8 +175,6 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 		vfh->flags = SWITCH_FILE_OPEN | SWITCH_FILE_FLAG_VIDEO;
 		//vfh->fd = (switch_file_t*)new_image;
 
-		
-		
 		switch_mutex_init(&vfh->flag_mutex, SWITCH_MUTEX_NESTED, pool);
 
 		vfh->private_info = (void*)session;
@@ -184,7 +183,7 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 			result = SWITCH_STATUS_FALSE;
 			break;
 		}
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	return result;
 }
@@ -199,12 +198,6 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 
 		switch_mutex_lock(vfh->flag_mutex);
 		vfh->flags = SWITCH_FILE_DONE;
-
-		if (vfh->fd)
-		{
-			switch_image_t* img = (switch_image_t*)vfh->fd;
-			switch_img_free(&img);
-		}
 
 		if (vfh->file)
 		{
@@ -231,7 +224,7 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	uint32_t width = gconfig.text_w? gconfig.text_w : 400;
 	uint32_t height = gconfig.text_h? gconfig.text_h : 100;
 
-	BOOL is_account = FALSE;
+	switch_bool_t is_account = SWITCH_FALSE;
 	char* dtmf_account = NULL;
 	char* dtmf_passwd = NULL;
 	char buf[256] = { 0 };
@@ -242,8 +235,8 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 
 	switch_core_session_t* session = (switch_core_session_t*)user_data->session;
 	switch_image_t* img = NULL;
-	BOOL is_account_step = FALSE;
-	BOOL is_data_changed = FALSE;
+	switch_bool_t is_account_step = SWITCH_FALSE;
+	switch_bool_t is_data_changed = SWITCH_FALSE;
 	char* text_format = gconfig.str_auth_text_format ? gconfig.str_auth_text_format : "#daffff:transparent::20:%s:";
 	//switch_channel_t* channel = switch_core_session_get_channel(session);
 
@@ -265,7 +258,7 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 			//fg bg  font_face fontsz  text
 			dtmf_account = switch_mprintf(text_format, user_data->account);
 			//user_data->flags &= ~AUTH_DTMF_ACCOUNT;
-			is_account = TRUE;
+			is_account = SWITCH_TRUE;
 		}
 		else if (!is_account_step
 			&& user_data->passwd != NULL)
@@ -305,21 +298,6 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	frame->img = img;
 	return result;
 }
-
-//static switch_status_t send_image(switch_core_session_t* session, switch_image_t* image)
-//{
-//	switch_frame_t fr = { 0 };
-//	unsigned char* buf = NULL;
-//	int buflen = SWITCH_RTP_MAX_BUF_LEN;
-//
-//	buf = switch_core_session_alloc(session, buflen);
-//	fr.packet = buf;
-//	fr.packetlen = buflen;
-//	fr.data = buf + 12;
-//	fr.buflen = buflen - 12;
-//	fr.img = image;
-//	switch_core_session_write_video_frame(session, &fr, SWITCH_IO_FLAG_FORCE, 0);
-//}
 
 switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 	auth_dtmf_type_t input_type, void* buf, unsigned int buflen)
@@ -500,10 +478,7 @@ static switch_status_t collect_input(switch_file_handle_t* vfh,
 			}
 		}
 
-
 		switch_ivr_parse_all_events(session);
-
-
 
 		if (eff_timeout) 
 		{
@@ -622,7 +597,7 @@ SWITCH_STANDARD_APP(conference_function)
 {
 	switch_status_t result = SWITCH_STATUS_FALSE;
 	switch_file_handle_t vfh = { 0 };
-	BOOL done = FALSE;
+	switch_bool_t done = SWITCH_FALSE;
 	int cur = 0;
 	int maxCount = 100;
 	char buf_account[256] = { 0 };
@@ -638,22 +613,23 @@ SWITCH_STANDARD_APP(conference_function)
 	{
 		if (!switch_channel_test_flag(channel, CF_VIDEO))
 		{
+			switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "switch_channel_test_flag(channel, CF_VIDEO) failed\n");
 			break;
 		}
 
 		if (!switch_channel_media_ready(channel))
 		{
+			switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "switch_channel_media_ready(channel) failed\n");
 			break;
 		}
 
 		switch_channel_set_flag(channel, CF_VIDEO_ECHO);
 
-		for (cur = 0; switch_channel_ready(channel) && !done && cur < maxCount; cur++)
+		result = switch_channel_wait_for_flag(channel, CF_VIDEO_READY, SWITCH_TRUE, 10000, NULL);
+		if (result != SWITCH_STATUS_SUCCESS)
 		{
-
+			switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_ERROR, "switch_channel_wait_for_flag %d failed\n", result);
 		}
-
-		switch_channel_wait_for_flag(channel, CF_VIDEO_READY, SWITCH_TRUE, 10000, NULL);
 
 		result = auth_file_open(session, "auth", "", &vfh);
 
@@ -705,7 +681,7 @@ SWITCH_STANDARD_APP(conference_function)
 		//const char* tmp_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhNGYwYjQwOS00NTYwLTQzYTQtYjZlMi05NmNkNTRjMjNlYjAiLCJpc3MiOiJ3aGFsZW9uLW9uZSIsImV4cCI6MTY5NDUzODQ3NCwiaWF0IjoxNjk0NTAyNDc0fQ.hOAPOU3wzotwFXrHmPJmpZr0sniDgUuDEK79agyACVh5x1sOq1vaiG5Fm1i21aTC0hNVO6kWrTwIpytRYsQDPw";
 		result = auth_conference_join(session, buf_account, buf_passwd, token);
 
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	if (new_account_image)
 	{

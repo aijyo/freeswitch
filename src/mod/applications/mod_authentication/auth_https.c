@@ -69,7 +69,7 @@ static char* auth_token_from_json(const char* jsonstr)
 			break;
 		}
 
-		BOOL suc = ks_json_get_object_bool(json, "success", FALSE);
+		switch_bool_t suc = ks_json_get_object_bool(json, "success", SWITCH_FALSE);
 
 		if (!suc)
 		{
@@ -89,7 +89,7 @@ static char* auth_token_from_json(const char* jsonstr)
 		}
 
 		result = strdup(token);
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	if (json)
 	{
@@ -113,7 +113,7 @@ static switch_status_t auth_update_session_info(switch_core_session_t* session, 
 			break;
 		}
 
-		BOOL suc = ks_json_get_object_bool(json, "success", FALSE);
+		switch_bool_t suc = ks_json_get_object_bool(json, "success", SWITCH_FALSE);
 
 		if (!suc)
 		{
@@ -146,7 +146,7 @@ static switch_status_t auth_update_session_info(switch_core_session_t* session, 
 		switch_channel_set_variable(channel, "iris_clientToken", clientToken);
 
 		result = SWITCH_STATUS_SUCCESS;
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	if (json)
 	{
@@ -229,6 +229,9 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 		long http_code = 0;
 		switch_curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
+		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_NOTICE,
+			"create session[%s] result[%d] response[%s]\n",
+			clientId, http_code, rd.data ? rd.data : "");
 		if (http_code == 200)
 		{
 
@@ -250,7 +253,7 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 		}
 
 
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	if (headers)
 	{
@@ -316,7 +319,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 
 		const char* uri = switch_core_sprintf(pool, "https://one-api.whaleon.naver.com/v2/meetings/%s/join", meetingId);
 		const char* auth_header = switch_core_sprintf(pool, "X-Auth-Token: %s", token);
-		const char* content = switch_core_sprintf(pool, "{ \"password\": %s, \"inviteCode\" :null, \"displayName\" : \"Tremendous whale\", \"profileImageUrl\" : \"string\", \"overlayFrame\" : \"REMOVE\", \"enableBreakoutRoomsFeature\" : false, \"mediaServer\" : \"I:1.0\" }"
+		const char* content = switch_core_sprintf(pool, "{ \"password\":\"%s\", \"inviteCode\" :null, \"displayName\" : \"Tremendous whale\", \"profileImageUrl\" : \"string\", \"overlayFrame\" : \"REMOVE\", \"enableBreakoutRoomsFeature\" : false, \"mediaServer\" : \"I:1.0\" }"
 			, passwd);
 		//ssl_cacert = switch_core_sprintf(pool, "%s%s", SWITCH_GLOBAL_dirs.certs_dir, "/cacert.pem");
 
@@ -351,18 +354,22 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 		long http_code = 0;
 		switch_curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
+		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_NOTICE,
+			"join room[%s] result[%d] response[%s]\n",
+			meetingId, http_code, rd.data? rd.data : "");
 		if (http_code == 200)
 		{
-			auth_update_session_info(session, rd.data);
+			result = auth_update_session_info(session, rd.data);
 		}
 		else
 		{
+			result = SWITCH_STATUS_FALSE;
 			break;
 		}
 
-		result = SWITCH_STATUS_SUCCESS;
+		//result = SWITCH_STATUS_SUCCESS;
 
-	} while (FALSE);
+	} while (SWITCH_FALSE);
 
 	if (headers)
 	{
@@ -397,7 +404,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 //#else
 //	if ((bootstrap = ks_json_get_object_cstr(json, "bootstrap")) == NULL) {
 //#endif
-//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Unable to connect to SignalWire: missing bootstrap URL\n");
+//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "Unable to connect to SignalWire: missing bootstrap URL\n");
 //		result = KS_STATUS_FAIL;
 //		goto done;
 //	}
@@ -407,13 +414,13 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 //#else
 //	if ((relay_connector_id = ks_json_get_object_cstr(json, "relay_connector_id")) == NULL) {
 //#endif
-//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Unable to connect to SignalWire: missing relay_connector_id\n");
+//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "Unable to connect to SignalWire: missing relay_connector_id\n");
 //		result = KS_STATUS_FAIL;
 //		goto done;
 //	}
 //
 //	if ((authentication = ks_json_get_object_item(json, "authentication")) == NULL) {
-//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "Unable to connect to SignalWire: missing authentication\n");
+//		switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "Unable to connect to SignalWire: missing authentication\n");
 //		result = KS_STATUS_FAIL;
 //		goto done;
 //	}
@@ -527,7 +534,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 //
 //	switch_snprintf(url, sizeof(url), "%s/%s", globals.adoption_service, globals.adoption_token);
 //
-//	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_DEBUG10, "Checking %s for SignalWire adoption of this FreeSWITCH\n", url);
+//	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE10, "Checking %s for SignalWire adoption of this FreeSWITCH\n", url);
 //
 //	curl = switch_curl_easy_init();
 //
@@ -588,7 +595,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 //
 //	ks_json_delete(&json);
 //
-//	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_INFO, "SignalWire adoption of this FreeSWITCH completed\n");
+//	switch_log_printf(SWITCH_CHANNEL_LOG, SWITCH_LOG_NOTICE, "SignalWire adoption of this FreeSWITCH completed\n");
 //
 //	// write out the data to save it for reloading in the future
 //	{
