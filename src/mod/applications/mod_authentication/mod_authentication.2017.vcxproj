@@ -289,7 +289,6 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="auth_def.h" />
     <ClInclude Include="auth_https.h" />
     <ClInclude Include="mod_auth.h" />
   </ItemGroup>

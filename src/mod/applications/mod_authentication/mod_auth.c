@@ -431,19 +431,20 @@ static switch_image_t* get_auth_backimage(auth_session_data_t* userdata)
 	do
 	{
 		if (!userdata) break;
-		result = userdata->account_bk_image;
 
 		//switch_bool_t is_data_changed = userdata->flags & (AUTH_DTMF_ACCOUNT_CHANGED | AUTH_DTMF_PASSWD_CHANGED);
 		if (userdata->flags & AUTH_DTMF_FAILED)
 		{
 			result = userdata->failed_bk_image;
 			break;
-		}
-
-		if (userdata->flags & AUTH_DTMF_PASSWD)
+		}else if (userdata->flags & AUTH_DTMF_PASSWD)
 		{
 			result = userdata->passwd_bk_image;
 			break;
+		}
+		else
+		{
+			result = userdata->account_bk_image;
 		}
 	} while (SWITCH_FALSE);
 	return result;
@@ -575,7 +576,51 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	return result;
 }
 
-switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
+// format: xxx xxx xxxx
+static void update_account_present_buf(char* buf, const char* input_buf, uint32_t input_len, char input_char)
+{
+	int space_count = 0;
+	char space = ' ';
+	if (input_len > 6)
+	{
+		//xxx xxx x
+		space_count = 2;
+		//buf[space_count * 3] = space;
+		buf[6] = space;
+	}
+	else if (input_len > 3)
+	{
+		//xxx x
+		space_count = 1;
+		//buf[space_count * 3] = space;
+		buf[3] = space;
+	}
+	else
+	{
+		// x
+		space_count = 0;
+	}
+	if (input_len > 0 && input_char != del_char)
+	{
+		buf[input_len + space_count - 1] = input_char;
+	}
+	buf[input_len + space_count] = '\0';
+}
+
+static void update_passwd_present_buf(char* buf, const char* input_buf, uint32_t input_len, char input_char)
+{
+	if (input_len > 0)
+	{
+		buf[input_len - 1] = input_buf[input_len-1];
+	}
+	if (input_len > 1)
+	{
+		buf[input_len - 2] = '*';
+	}
+	buf[input_len] = '\0';
+}
+
+static switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 	auth_dtmf_type_t input_type, void* buf, unsigned int buflen)
 {
 	switch_status_t result = SWITCH_STATUS_SUCCESS;
@@ -605,19 +650,8 @@ switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 			}
 			user_data->str_account[buflen] = '\0';
 
-			int prensent_len = strlen(user_data->str_account_present);
-			user_data->str_account_present[prensent_len] = input_char;
-			if (input_len == 3
-				|| input_len == 6)
-			{
-				int space_count = input_len / 3;
-				user_data->str_account_present[prensent_len+1] = ' ';
-				user_data->str_account_present[prensent_len+2] = '\0';
-			}
-			else
-			{
-				user_data->str_account_present[prensent_len+1] = '\0';
-			}
+			update_account_present_buf(user_data->str_account_present
+				, input_buf, input_len, input_char);
 		}
 		else if(input_type == AUTH_INPUT_TYPE_PASSWD)
 		{
@@ -632,15 +666,8 @@ switch_status_t input_callback_function(switch_file_handle_t* vfh, void* input,
 			}
 			user_data->str_passwd[buflen] = '\0';
 
-			if (buflen > 0)
-			{
-				user_data->str_passwd_present[buflen - 1] = input_char;
-			}
-			if (buflen > 1)
-			{
-				user_data->str_passwd_present[buflen - 2] = '*';
-			}
-			user_data->str_passwd_present[buflen] = '\0';
+			update_passwd_present_buf(user_data->str_passwd_present
+				, input_buf, input_len, input_char);
 
 		}
 
@@ -1028,13 +1055,13 @@ SWITCH_STANDARD_APP(conference_function)
 			result = collect_input(&vfh, input_type, buf_passwd, 256, 25, "#", &terminator
 				, 300000, 200000, 0, input_callback_function);
 
-			{
-				switch_core_media_lock_video_file(session, SWITCH_RW_READ);
+			//{
+			//	switch_core_media_lock_video_file(session, SWITCH_RW_READ);
 
-				user_data.flags &= ~(AUTH_DTMF_PASSWD);
+			//	user_data.flags &= ~(AUTH_DTMF_PASSWD);
 
-				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
-			}
+			//	switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
+			//}
 			switch_channel_set_variable(channel, "conference_passwd", buf_passwd);
 
 			switch_memory_pool_t* pool = switch_core_session_get_pool(session);
@@ -1050,6 +1077,7 @@ SWITCH_STANDARD_APP(conference_function)
 				http_desc = NULL;
 				if (!token)
 				{
+					user_data.flags &= ~(AUTH_DTMF_PASSWD);
 					user_data.flags |= (AUTH_DTMF_FAILED & AUTH_DTMF_FAILED_CHANGED);
 				}
 				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
@@ -1072,6 +1100,7 @@ SWITCH_STANDARD_APP(conference_function)
 				http_desc = NULL;
 				if (result != SWITCH_STATUS_SUCCESS)
 				{
+					user_data.flags &= ~(AUTH_DTMF_PASSWD);
 					user_data.flags |= (AUTH_DTMF_FAILED | AUTH_DTMF_FAILED_CHANGED);
 				}
 				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);

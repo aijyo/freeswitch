@@ -120,7 +120,7 @@ static switch_status_t auth_update_session_info(switch_core_session_t* session, 
 
 		switch_bool_t suc = ks_json_get_object_bool(json, "success", SWITCH_FALSE);
 
-		const char* message = ks_json_get_object_string(json, "message", "");
+		char* message = ks_json_get_object_string(json, "message", "");
 		if (message)
 		{
 			*desc = strdup(message);
@@ -383,8 +383,7 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 
 		if (http_code == 200)
 		{
-			result = auth_update_session_info(session, rd.data, desc);
-			char* token = auth_token_from_json(rd.data, &desc);
+			result = auth_update_session_info(session, rd.data, &desc);
 
 			*out_desc = desc;
 
