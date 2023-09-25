@@ -2,6 +2,7 @@
   <settings>
     <param name="account_bk_image" value="$${base_dir}/images/auth_account_bk_image.png"/>
     <param name="passwd_bk_image" value="$${base_dir}/images/auth_passwd_bk_image.png"/>
+    <param name="failed_bk_image" value="$${base_dir}/images/auth_account_bk_image.png"/>
     <param name="auth_text_format" value="#1f1f1f:#daffff::30:%s:"/>
     <param name="text_x" value="0"/>
     <param name="text_y" value="0"/>

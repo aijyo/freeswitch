@@ -56,7 +56,7 @@ switch_status_t curl_uninitialize()
 	return result;
 }
 
-static char* auth_token_from_json(const char* jsonstr)
+static char* auth_token_from_json(const char* jsonstr, char** desc)
 {
 	char* result = NULL;
 	ks_json_t* json = NULL;
@@ -70,6 +70,11 @@ static char* auth_token_from_json(const char* jsonstr)
 		}
 
 		switch_bool_t suc = ks_json_get_object_bool(json, "success", SWITCH_FALSE);
+		const char* message = ks_json_get_object_string(json, "message", "");
+		if (message)
+		{
+			*desc = strdup(message);
+		}
 
 		if (!suc)
 		{
@@ -99,7 +104,7 @@ static char* auth_token_from_json(const char* jsonstr)
 }
 
 
-static switch_status_t auth_update_session_info(switch_core_session_t* session, const char* jsonstr)
+static switch_status_t auth_update_session_info(switch_core_session_t* session, const char* jsonstr, char** desc)
 {
 	switch_status_t result = SWITCH_STATUS_FALSE;
 	switch_channel_t* channel = switch_core_session_get_channel(session);
@@ -114,6 +119,12 @@ static switch_status_t auth_update_session_info(switch_core_session_t* session, 
 		}
 
 		switch_bool_t suc = ks_json_get_object_bool(json, "success", SWITCH_FALSE);
+
+		const char* message = ks_json_get_object_string(json, "message", "");
+		if (message)
+		{
+			*desc = strdup(message);
+		}
 
 		if (!suc)
 		{
@@ -171,7 +182,7 @@ static switch_status_t auth_update_session_info(switch_core_session_t* session, 
 //			"refreshTokenExpiresAt" : 1694523900000
 //	}
 //}
-const char* auth_session_create(switch_core_session_t* session, const char* clientId)
+const char* auth_session_create(switch_core_session_t* session, const char* clientId, uint32_t* out_code, char** out_desc)
 {
 	const char* result = NULL;
 	struct response_data rd = { 0 };
@@ -182,7 +193,9 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 
 	switch_memory_pool_t* pool = switch_core_session_get_pool(session);
 	switch_CURL* curl = switch_curl_easy_init();
+	switch_channel_t* channel = switch_core_session_get_channel(session);
 
+	char* desc = NULL;
 	do
 	{
 		if (!curl)
@@ -229,13 +242,20 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 		long http_code = 0;
 		switch_curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
+		*out_code = http_code;
 		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_NOTICE,
 			"create session[%s] result[%d] response[%s]\n",
 			clientId, http_code, rd.data ? rd.data : "");
+
 		if (http_code == 200)
 		{
+			char* token = auth_token_from_json(rd.data, &desc);
 
-			char* token = auth_token_from_json(rd.data);
+			if (desc)
+			{
+				*out_desc = desc;
+			}
+
 			if (!token)
 			{
 				break;
@@ -293,12 +313,13 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 //		"result" : null
 //}
 switch_status_t auth_conference_join(switch_core_session_t* session, const char* meetingId
-	, const char* str_passwd, const char* token)
+	, const char* str_passwd, const char* token, uint32_t* out_code, char** out_desc)
 {
 	switch_status_t result = SWITCH_STATUS_FALSE;
 	struct response_data rd = { 0 };
 	char* jsonstr = NULL;
 	char* ssl_cacert = NULL;
+	char* desc = NULL;
 	//char* meetingId = "8003289905";
 	//char* str_passwd = "586617";
 	//char* inviteCode = "5f22794e08774f2a8a28fa066745f849";
@@ -354,12 +375,19 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 		long http_code = 0;
 		switch_curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
 
+		*out_code = http_code;
+
 		switch_log_printf(SWITCH_CHANNEL_SESSION_LOG(session), SWITCH_LOG_NOTICE,
 			"join room[%s] result[%d] response[%s]\n",
 			meetingId, http_code, rd.data? rd.data : "");
+
 		if (http_code == 200)
 		{
-			result = auth_update_session_info(session, rd.data);
+			result = auth_update_session_info(session, rd.data, desc);
+			char* token = auth_token_from_json(rd.data, &desc);
+
+			*out_desc = desc;
+
 		}
 		else
 		{
