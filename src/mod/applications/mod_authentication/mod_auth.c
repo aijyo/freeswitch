@@ -586,14 +586,14 @@ static void update_account_present_buf(char* buf, const char* input_buf, uint32_
 		//xxx xxx x
 		space_count = 2;
 		//buf[space_count * 3] = space;
-		buf[6] = space;
+		buf[6+space_count-1] = space;
 	}
 	else if (input_len > 3)
 	{
 		//xxx x
 		space_count = 1;
 		//buf[space_count * 3] = space;
-		buf[3] = space;
+		buf[3 + space_count - 1] = space;
 	}
 	else
 	{
@@ -938,7 +938,7 @@ SWITCH_STANDARD_APP(conference_function)
 
 	do
 	{
-		const char* session_type = switch_channel_get_variable(channel, "session_type");
+		const char* session_type = switch_channel_get_variable(channel, "fs_session_type");
 		if (session_type && (0 == strcmp(session_type, "iris")))
 		{
 			result = SWITCH_STATUS_SUCCESS;

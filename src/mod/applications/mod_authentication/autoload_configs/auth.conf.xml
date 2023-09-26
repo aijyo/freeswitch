@@ -17,8 +17,12 @@
     <param name="failed_text_h" value="0"/>
 	
     <param name="retry_count" value="3"/>
+	<!-- time microseconds -->
+	<!-- time out for first char input -->
     <param name="first_timeout" value="300000"/>
+	<!-- time out for char input -->
     <param name="digit_timeout" value="200000"/>
+	<!-- time out for total char input -->
     <param name="abs_timeout" value="0"/>
 	<!-- value[0, 30) -->
     <param name="min_account_count" value="5"/>
