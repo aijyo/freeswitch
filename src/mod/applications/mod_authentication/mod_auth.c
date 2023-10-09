@@ -1036,8 +1036,8 @@ SWITCH_STANDARD_APP(conference_function)
 
 			//	switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 			//}
-			result = collect_input(&vfh, input_type, buf_account, 256, 25, "#", &terminator
-				, 300000, 200000, 0, input_callback_function);
+			result = collect_input(&vfh, input_type, buf_account, 256, gconfig.max_account_count, "#", &terminator
+				, gconfig.first_timeout, gconfig.digit_timeout, gconfig.abs_timeout, input_callback_function);
 
 			//send_image_response(session, imagePath);
 			switch_channel_set_variable(channel, "conference_id", buf_account);
@@ -1052,8 +1052,8 @@ SWITCH_STANDARD_APP(conference_function)
 
 			input_type = AUTH_INPUT_TYPE_PASSWD;
 
-			result = collect_input(&vfh, input_type, buf_passwd, 256, 25, "#", &terminator
-				, 300000, 200000, 0, input_callback_function);
+			result = collect_input(&vfh, input_type, buf_passwd, 256, gconfig.max_passwd_count, "#", &terminator
+				, gconfig.first_timeout, gconfig.digit_timeout, gconfig.abs_timeout, input_callback_function);
 
 			//{
 			//	switch_core_media_lock_video_file(session, SWITCH_RW_READ);
