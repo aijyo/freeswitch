@@ -228,6 +228,8 @@ const char* auth_session_create(switch_core_session_t* session, const char* clie
 
 		switch_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_data_handler);
 		switch_curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&rd);
+		switch_curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30);
+		switch_curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
 		
 		//switch_curl_easy_setopt(curl, CURLOPT_CAINFO, ssl_cacert);
 
@@ -361,6 +363,8 @@ switch_status_t auth_conference_join(switch_core_session_t* session, const char*
 
 		switch_curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, response_data_handler);
 		switch_curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&rd);
+		switch_curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 30);
+		switch_curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30);
 
 		//switch_curl_easy_setopt(curl, CURLOPT_CAINFO, ssl_cacert);
 

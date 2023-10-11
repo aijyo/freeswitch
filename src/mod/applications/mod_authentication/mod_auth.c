@@ -420,7 +420,7 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 	{
 		switch_mutex_destroy(vfh->flag_mutex);
 	}
-
+	//switch_core_file_close(vfh);
 	return result;
 }
 
@@ -437,7 +437,8 @@ static switch_image_t* get_auth_backimage(auth_session_data_t* userdata)
 		{
 			result = userdata->failed_bk_image;
 			break;
-		}else if (userdata->flags & AUTH_DTMF_PASSWD)
+		}
+		else if (userdata->flags & AUTH_DTMF_PASSWD)
 		{
 			result = userdata->passwd_bk_image;
 			break;
