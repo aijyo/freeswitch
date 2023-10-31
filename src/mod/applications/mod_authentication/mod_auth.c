@@ -10,9 +10,11 @@
 
 #include <switch.h>
 #include <switch_curl.h>
+#include <polycom/https/lib_https.h>
 
 #include "mod_auth.h"
-#include "auth_https.h"
+
+//#pragma comment(lib, "D:/code/gitcode/freeswitch/x64/Debug/polycom_https.lib")
 
 #define AUTH_DTMF_ACCOUNT (1)
 #define AUTH_DTMF_PASSWD (2)
@@ -22,6 +24,8 @@
 #define AUTH_DTMF_FAILED_CHANGED (32)
 //#define AUTH_APP_USAGE "<realm>,<digits|~regex>,<string>[,<value>][,<dtmf target leg>][,<event target leg>]"
 #define AUTH_APP_USAGE ""
+
+static const char gHmacKey[] = "hJJH0eHkbAxuKoaPUsahilWyhCZNWyWZzB1Pz5u5sqqw6gEsshb48oNoIDcgswNW";
 
 SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load);
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown);
@@ -38,7 +42,8 @@ typedef struct auth_session_data {
 	char str_passwd[32];
 	char str_account_present[32];
 	char str_passwd_present[32];
-	const char* str_failed_desc;
+	char str_failed_desc[256];
+	//const char* str_failed_desc;
 	switch_frame_t* account_bk_image;
 	switch_frame_t* passwd_bk_image;
 	switch_frame_t* failed_bk_image;
@@ -140,7 +145,6 @@ static void destroy_auth_session_data(auth_session_data_t* pThis)
 			pThis->failed_bk_image = NULL;
 		}
 
-		switch_safe_free(pThis->str_failed_desc);
 	} while (SWITCH_FALSE);
 }
 
@@ -174,6 +178,128 @@ static void destroy_auth_config(auth_config_t* pThis)
 		switch_safe_free(pThis->str_passwd_bk_image);
 	} while (SWITCH_FALSE);
 }
+
+static switch_bool_t InitCreateParam(PolycomCreateParam* pThis, const char* clientId)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	const char* pUrl = "https://dev.apis.naver.com/polycom/whaleon/v2/session";
+	do
+	{
+		if (!pThis)
+			break;
+
+		memset(pThis, 0, sizeof(PolycomCreateParam));
+		strcpy(pThis->url, pUrl);
+		strcpy(pThis->id, clientId);
+
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t InitCreateResult(PolycomCreateResult* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomCreateResult));
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t InitJoinParam(PolycomJoinParam* pThis, const char* meetingId)
+{
+	switch_bool_t result = SWITCH_TRUE;
+	const char* fmt = "https://dev.apis.naver.com/polycom/whaleon/v2/meetings/%s/join";
+	do
+	{
+		if (!pThis || !meetingId)
+			break;
+		memset(pThis, 0, sizeof(PolycomJoinParam));
+		sprintf(pThis->url, fmt, meetingId);
+
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t InitJoinResult(PolycomJoinResult* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomJoinResult));
+
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+
+static switch_bool_t DestroyCreateParam(PolycomCreateParam* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomCreateParam));
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t DestroyCreateResult(PolycomCreateResult* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomCreateResult));
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t DestroyJoinParam(PolycomJoinParam* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomJoinParam));
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
+static switch_bool_t DestroyJoinResult(PolycomJoinResult* pThis)
+{
+	switch_bool_t result = SWITCH_TRUE;
+
+	do
+	{
+		if (!pThis)
+			break;
+		memset(pThis, 0, sizeof(PolycomJoinResult));
+	} while (SWITCH_FALSE);
+
+	return result;
+}
+
 
 static switch_status_t do_config(auth_config_t* config)
 {
@@ -364,6 +490,7 @@ done:
 
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown)
 {
+	polycom_https_destroy();
 	destroy_auth_config(&gconfig);
 	return SWITCH_STATUS_SUCCESS;
 }
@@ -395,7 +522,7 @@ static switch_status_t auth_file_open(switch_core_session_t* session, const char
 	} while (SWITCH_FALSE);
 
 	return result;
-}
+} 
 
 static switch_status_t auth_file_close(switch_core_session_t* session, const char* modname
 	, const char* file, switch_file_handle_t* vfh)
@@ -928,7 +1055,6 @@ SWITCH_STANDARD_APP(conference_function)
 	char buf_passwd[256] = { 0 };
 	char terminator = ' ';
 	const char* token = NULL;
-	char* http_desc = NULL;
 	
 	switch_image_t* new_account_image = NULL;
 	switch_image_t* new_passwd_image = NULL;
@@ -1068,15 +1194,20 @@ SWITCH_STANDARD_APP(conference_function)
 			switch_memory_pool_t* pool = switch_core_session_get_pool(session);
 			uint64_t timestamp = switch_micro_time_now();
 			const char* clientId = switch_core_sprintf(pool, "sip-test-0001_%"SWITCH_UINT64_T_FMT"", timestamp);
-			token = auth_session_create(session, clientId, &http_code, &http_desc);
+
+			PolycomCreateParam create_param;
+			PolycomCreateResult create_result;
+			InitCreateParam(&create_param, clientId);
+			InitCreateResult(&create_result);
+
+			result = polycom_htts_create(&create_param, &create_result);
+			//token = auth_session_create(session, clientId, &http_code, &http_desc);
 
 			{
 				switch_core_media_lock_video_file(session, SWITCH_RW_READ);
-				user_data.failed_code = http_code;
-				switch_safe_free(user_data.str_failed_desc);
-				user_data.str_failed_desc = http_desc;
-				http_desc = NULL;
-				if (!token)
+				user_data.failed_code = create_result.code;
+				strcpy(user_data.str_failed_desc, create_result.desc);
+				if (result != SWITCH_STATUS_SUCCESS)
 				{
 					user_data.flags &= ~(AUTH_DTMF_PASSWD);
 					user_data.flags |= (AUTH_DTMF_FAILED & AUTH_DTMF_FAILED_CHANGED);
@@ -1084,21 +1215,28 @@ SWITCH_STANDARD_APP(conference_function)
 				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 			}
 
-			if (!token)
+			if (result != SWITCH_STATUS_SUCCESS)
 			{
 				continue;
 			}
 
 			//const char* tmp_token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhNGYwYjQwOS00NTYwLTQzYTQtYjZlMi05NmNkNTRjMjNlYjAiLCJpc3MiOiJ3aGFsZW9uLW9uZSIsImV4cCI6MTY5NDUzODQ3NCwiaWF0IjoxNjk0NTAyNDc0fQ.hOAPOU3wzotwFXrHmPJmpZr0sniDgUuDEK79agyACVh5x1sOq1vaiG5Fm1i21aTC0hNVO6kWrTwIpytRYsQDPw";
-			result = auth_conference_join(session, buf_account, buf_passwd, token, &http_code, &http_desc);
+			//result = auth_conference_join(session, buf_account, buf_passwd, token, &http_code, &http_desc);
 
+			PolycomJoinParam join_param;
+			PolycomJoinResult join_result;
+			InitJoinParam(&join_param, buf_account);
+			InitJoinResult(&join_result);
+
+			strcpy(&join_param.id, buf_account);
+			strcpy(&join_param.passwd, buf_passwd);
+			strcpy(&join_param.token, create_result.token);
+			result = polycom_htts_join(&join_param, &join_result);
 
 			{
 				switch_core_media_lock_video_file(session, SWITCH_RW_READ);
-				user_data.failed_code = http_code;
-				switch_safe_free(user_data.str_failed_desc);
-				user_data.str_failed_desc = http_desc;
-				http_desc = NULL;
+				user_data.failed_code = join_result.code;
+				strcpy(user_data.str_failed_desc, join_result.desc);
 				if (result != SWITCH_STATUS_SUCCESS)
 				{
 					user_data.flags &= ~(AUTH_DTMF_PASSWD);
@@ -1106,13 +1244,16 @@ SWITCH_STANDARD_APP(conference_function)
 				}
 				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 			}
-			//switch_core_media_lock_video_file(session, SWITCH_RW_READ);
-
-			//userdata->flags |= is_account ? AUTH_DTMF_ACCOUNT : AUTH_DTMF_PASSWD;
-
-			//switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 
 			auth_suc = result == SWITCH_STATUS_SUCCESS;
+
+			if (auth_suc)
+			{
+				switch_channel_set_variable(channel, "iris_clientId", join_result.id);
+				switch_channel_set_variable(channel, "iris_displayName", join_result.displayName);
+				switch_channel_set_variable(channel, "iris_meetingToken", join_result.roomToken);
+				switch_channel_set_variable(channel, "iris_clientToken", join_result.token);
+			}
 		}
 
 
@@ -1142,6 +1283,11 @@ SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load)
 	switch_api_interface_t *api_interface = NULL;
 	switch_application_interface_t* app_interface = NULL;
 	switch_file_interface_t* file_interface;
+	PolycomInitParam param;
+
+	param.curlFlags = CURL_GLOBAL_DEFAULT;
+	strcpy(param.hmacKey, gHmacKey);
+	polycom_htts_init(&param);
 
 	init_auth_config_data(&gconfig);
 	gconfig.pool = pool;

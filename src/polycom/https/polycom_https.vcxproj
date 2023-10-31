@@ -43,10 +43,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectName>mod_auth</ProjectName>
+    <ProjectName>polycom_https</ProjectName>
     <RootNamespace>mod_av</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{F95D037F-4536-48A4-8B49-CCDEDD4FAFF7}</ProjectGuid>
+    <ProjectGuid>{515D0D96-3AB8-414A-8CDB-E901CEC915E3}</ProjectGuid>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|Win32'" Label="Configuration">
@@ -60,32 +61,32 @@
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-openh264|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-openh264|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
@@ -96,65 +97,40 @@
   <Import Project="$(SolutionDir)\w32\openssl.props" Condition=" '$(OpensslPropsImported)' == '' " />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_release.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|Win32'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_debug.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_release.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_debug.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release-openh264|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_release.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_release.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug-openh264|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_debug.props" />
-  </ImportGroup>
-  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
-    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
-    <Import Project="..\..\..\..\w32\module_debug.props" />
-  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-openh264|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-openh264|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|x64'">
-    <IncludePath>$(SolutionDir)src\;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
+    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|Win32'">
     <ClCompile>
@@ -175,7 +151,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -186,7 +162,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-openh264|x64'">
@@ -195,7 +171,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -206,7 +182,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -215,7 +191,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -226,7 +202,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|Win32'">
@@ -250,7 +226,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -261,7 +237,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release-openh264|x64'">
@@ -270,7 +246,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -281,7 +257,7 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -290,7 +266,7 @@
     </Midl>
     <ClCompile>
       <AdditionalIncludeDirectories>"../../libvpx";$(SolutionDir)\src\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;MOD_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;FREESWITCHCORE_EXPORTS;_CRT_SECURE_NO_DEPRECATE;HAVE_AV_CONFIG_H;_ISOC99_SOURCE;_FILE_OFFSET_BITS=64;_LARGEFILE_SOURCE;_USE_MATH_DEFINES;_CRT_SECURE_NO_WARNINGS;_CRT_NONSTDC_NO_WARNINGS;_WIN32_WINNT=0x0502;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <DisableSpecificWarnings>4244;4127;4018;4389;4146;4057;4204;4706;4305;4152;4324;4013;4100;4214;4273;4554;4701;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -301,23 +277,38 @@
       <DataExecutionPrevention>
       </DataExecutionPrevention>
       <TargetMachine>MachineX64</TargetMachine>
-      <AdditionalDependencies>$(SolutionDir)$(PlatformName)\$(Configuration)\polycom_https.lib;$(SolutionDir)$(PlatformName)\$(Configuration)\libApiGateway-MAC.lib;kernel32.lib;user32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;Ws2_32.lib;Iphlpapi.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(projectdir)3rd\lib\hmac\$(platform)\$(Configuration)\libApiGateway-MAC.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="mod_auth.c" />
+    <ClCompile Include="auth_https.c" />
+    <ClCompile Include="lib_https.cpp" />
+    <ClCompile Include="MACManager\base64.cpp" />
+    <ClCompile Include="MACManager\HelperUtil.cpp" />
+    <ClCompile Include="MACManager\HmacUtil.cpp" />
+    <ClCompile Include="MACManager\MacEngine.cpp" />
+    <ClCompile Include="MACManager\MACManager.cpp" />
+    <ClCompile Include="MACManager\SHA1.cpp" />
+    <ClCompile Include="MACManager\stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\libs\win32\ffmpeg\ffmpeg.2017.vcxproj">
-      <Project>{bc1fd72e-1cd5-4525-a7f5-17c5740bfded}</Project>
-    </ProjectReference>
-    <ProjectReference Include="..\..\..\..\w32\Library\FreeSwitchCore.2017.vcxproj">
+    <ClInclude Include="auth_https.h" />
+    <ClInclude Include="lib_https.h" />
+    <ClInclude Include="lib_types.h" />
+    <ClInclude Include="MACManager\base64.h" />
+    <ClInclude Include="MACManager\HelperUtil.h" />
+    <ClInclude Include="MACManager\HmacUtil.h" />
+    <ClInclude Include="MACManager\IMACManager.h" />
+    <ClInclude Include="MACManager\MacEngine.h" />
+    <ClInclude Include="MACManager\MACManager.h" />
+    <ClInclude Include="MACManager\SHA1.h" />
+    <ClInclude Include="MACManager\stdafx.h" />
+    <ClInclude Include="MACManager\targetver.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\w32\Library\FreeSwitchCore.2017.vcxproj">
       <Project>{202d7a4e-760d-4d0e-afa1-d7459ced30ff}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="mod_auth.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

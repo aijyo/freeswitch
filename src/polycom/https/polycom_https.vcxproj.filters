@@ -1,0 +1,65 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="auth_https.c" />
+    <ClCompile Include="lib_https.cpp" />
+    <ClCompile Include="MACManager\base64.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\HelperUtil.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\HmacUtil.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\MacEngine.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\MACManager.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\SHA1.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+    <ClCompile Include="MACManager\stdafx.cpp">
+      <Filter>MACManager</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="auth_https.h" />
+    <ClInclude Include="lib_https.h" />
+    <ClInclude Include="lib_types.h" />
+    <ClInclude Include="MACManager\base64.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\HelperUtil.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\HmacUtil.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\IMACManager.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\MacEngine.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\MACManager.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\SHA1.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\stdafx.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+    <ClInclude Include="MACManager\targetver.h">
+      <Filter>MACManager</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="MACManager">
+      <UniqueIdentifier>{2b9c7bab-7627-4ec3-ab4d-1bb5fb62271e}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
