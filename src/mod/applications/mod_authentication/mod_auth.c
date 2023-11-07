@@ -25,7 +25,11 @@
 //#define AUTH_APP_USAGE "<realm>,<digits|~regex>,<string>[,<value>][,<dtmf target leg>][,<event target leg>]"
 #define AUTH_APP_USAGE ""
 
-static const char gHmacKey[] = "hJJH0eHkbAxuKoaPUsahilWyhCZNWyWZzB1Pz5u5sqqw6gEsshb48oNoIDcgswNW";
+#ifdef _DEV_ENV
+//static const char gHmacKey[] = "hJJH0eHkbAxuKoaPUsahilWyhCZNWyWZzB1Pz5u5sqqw6gEsshb48oNoIDcgswNW"; // dev
+#else
+static const char gHmacKey[] = "lf8MY6Ue7ssth7fsWutHjGRCPHUDkhAvpx7e77QYu6KHNlqAy1uwzFvn9lxId4UK"; // real
+#endif
 
 SWITCH_MODULE_LOAD_FUNCTION(mod_auth_load);
 SWITCH_MODULE_SHUTDOWN_FUNCTION(mod_auth_shutdown);
@@ -183,7 +187,11 @@ static switch_bool_t InitCreateParam(PolycomCreateParam* pThis, const char* clie
 {
 	switch_bool_t result = SWITCH_TRUE;
 
+#ifdef _DEV_ENV
 	const char* pUrl = "https://dev.apis.naver.com/polycom/whaleon/v2/session";
+#else
+	const char* pUrl = "http://apis.naver.com/polycom/whaleon/v2/session";
+#endif
 	do
 	{
 		if (!pThis)
@@ -215,7 +223,11 @@ static switch_bool_t InitCreateResult(PolycomCreateResult* pThis)
 static switch_bool_t InitJoinParam(PolycomJoinParam* pThis, const char* meetingId)
 {
 	switch_bool_t result = SWITCH_TRUE;
-	const char* fmt = "https://dev.apis.naver.com/polycom/whaleon/v2/meetings/%s/join";
+#ifdef _DEV_ENV
+	const char* pUrl = "https://dev.apis.naver.com/polycom/whaleon/v2/session";
+#else
+	const char* fmt = "http://apis.naver.com/polycom/whaleon/v2/meetings/%s/join";
+#endif
 	do
 	{
 		if (!pThis || !meetingId)
@@ -529,9 +541,10 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 {
 	switch_status_t result = SWITCH_STATUS_SUCCESS;
 
-	if (vfh)
+	do
 	{
-
+		if (!vfh)
+			break;
 		switch_mutex_lock(vfh->flag_mutex);
 		vfh->flags = SWITCH_FILE_DONE;
 
@@ -542,11 +555,13 @@ static switch_status_t auth_file_close(switch_core_session_t* session, const cha
 		}
 
 		switch_mutex_unlock(vfh->flag_mutex);
-	}
-	if (vfh->flag_mutex)
-	{
-		switch_mutex_destroy(vfh->flag_mutex);
-	}
+
+		if (vfh->flag_mutex)
+		{
+			switch_mutex_destroy(vfh->flag_mutex);
+		}
+
+	} while (FALSE);
 	//switch_core_file_close(vfh);
 	return result;
 }
@@ -581,7 +596,7 @@ static switch_image_t* get_auth_backimage(auth_session_data_t* userdata)
 // write handle image to frame
 static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_frame_t* frame)
 {
-	switch_status_t result = SWITCH_STATUS_SUCCESS;
+	switch_status_t result = SWITCH_STATUS_FALSE;
 	uint32_t center_x = 0;
 	uint32_t center_y = 0;
 	uint32_t width = gconfig.text_w? gconfig.text_w : 400;
@@ -609,8 +624,11 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 	const char* failed_text_format = gconfig.str_auth_failed_format ? gconfig.str_auth_failed_format 
 		: "#fca454:transparent::20:auth failed,code[%d], desc[%s]:";
 
-	if (userdata)
+	do
 	{
+		if (!userdata)
+			break;
+
 
 		switch_core_media_lock_video_file(userdata->session, SWITCH_RW_READ);
 
@@ -623,6 +641,9 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 		userdata->flags &= ~(AUTH_DTMF_ACCOUNT_CHANGED | AUTH_DTMF_PASSWD_CHANGED | AUTH_DTMF_FAILED_CHANGED);
 
 		img = get_auth_backimage(userdata);
+
+		if (!img)
+			break;
 
 		if (is_account && is_data_changed)
 		{
@@ -637,70 +658,76 @@ static switch_status_t auth_file_write(switch_file_handle_t* handle, switch_fram
 		{
 			dtmf_failed = switch_mprintf(failed_text_format
 				, userdata->failed_code
-				, userdata->str_failed_desc? userdata->str_failed_desc : "empty");
+				, userdata->str_failed_desc ? userdata->str_failed_desc : "empty");
 		}
 		else
 		{
 			// error?
 		}
 		switch_core_media_unlock_video_file(userdata->session, SWITCH_RW_READ);
-	}
-
-	if (dtmf_account/* && dtmf_account[0] != '\0'*/)
-	{
-		auth_account_text = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_account);
-	}
-
-	switch_safe_free(dtmf_account);
-
-	if (is_failed)
-	{
-		center_x = gconfig.failed_text_x ? gconfig.failed_text_x : (20);
-		center_y = gconfig.failed_text_y ? gconfig.failed_text_y : (-failed_height - 20 + img->h);
-
-		failed_width = gconfig.failed_text_w ? gconfig.failed_text_w : img->w - 40;
-		failed_height = gconfig.failed_text_h ? gconfig.failed_text_h : 100;
-	}
-	else
-	{
-		center_x = gconfig.text_x ? gconfig.text_x : (-20 + img->w / 2);
-		center_y = gconfig.text_y ? gconfig.text_y : (-20 + img->h / 2);
-	}
-
-	if (dtmf_passwd/* && dtmf_passwd[0] != '\0'*/)
-	{
-		auth_passwd_text = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_passwd);
-	}
-	switch_safe_free(dtmf_passwd);
-
-	if (dtmf_failed/* && dtmf_failed[0] != '\0'*/)
-	{
-		auth_failed_text = switch_img_write_text_img(failed_width, failed_height, SWITCH_TRUE, dtmf_failed);
-	}
-	switch_safe_free(dtmf_failed);
 
 
-	if (is_account && auth_account_text)
-	{
-		switch_img_patch(img, auth_account_text, center_x - width/2, center_y - height/2 );
-		switch_img_free(&auth_account_text);
-	}
-	
-	if(is_passwd && auth_passwd_text)
-	{
-		//switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y + height/2);
-		switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y - height / 2);
-		switch_img_free(&auth_passwd_text);
-	}
-	
-	if (is_failed && auth_failed_text)
-	{
-		//switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y + height/2);
-		switch_img_patch(img, auth_failed_text, center_x, center_y);
-		switch_img_free(&auth_failed_text);
-	}
+		if (dtmf_account/* && dtmf_account[0] != '\0'*/)
+		{
+			auth_account_text = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_account);
+		}
 
-	frame->img = img;
+		switch_safe_free(dtmf_account);
+
+
+		if (is_failed)
+		{
+			center_x = gconfig.failed_text_x ? gconfig.failed_text_x : (20);
+			center_y = gconfig.failed_text_y ? gconfig.failed_text_y : (-failed_height - 20 + img->h);
+
+			failed_width = gconfig.failed_text_w ? gconfig.failed_text_w : img->w - 40;
+			failed_height = gconfig.failed_text_h ? gconfig.failed_text_h : 100;
+		}
+		else
+		{
+			center_x = gconfig.text_x ? gconfig.text_x : (-20 + img->w / 2);
+			center_y = gconfig.text_y ? gconfig.text_y : (-20 + img->h / 2);
+		}
+
+		if (dtmf_passwd/* && dtmf_passwd[0] != '\0'*/)
+		{
+			auth_passwd_text = switch_img_write_text_img(width, height, SWITCH_TRUE, dtmf_passwd);
+		}
+		switch_safe_free(dtmf_passwd);
+
+		if (dtmf_failed/* && dtmf_failed[0] != '\0'*/)
+		{
+			auth_failed_text = switch_img_write_text_img(failed_width, failed_height, SWITCH_TRUE, dtmf_failed);
+		}
+		switch_safe_free(dtmf_failed);
+
+
+		if (is_account && auth_account_text)
+		{
+			switch_img_patch(img, auth_account_text, center_x - width / 2, center_y - height / 2);
+			switch_img_free(&auth_account_text);
+		}
+
+		if (is_passwd && auth_passwd_text)
+		{
+			//switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y + height/2);
+			switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y - height / 2);
+			switch_img_free(&auth_passwd_text);
+		}
+
+		if (is_failed && auth_failed_text)
+		{
+			//switch_img_patch(img, auth_passwd_text, center_x - width / 2, center_y + height/2);
+			switch_img_patch(img, auth_failed_text, center_x, center_y);
+			switch_img_free(&auth_failed_text);
+		}
+
+		frame->img = img;
+		result = SWITCH_STATUS_SUCCESS;
+	} while (FALSE);
+
+
+
 	return result;
 }
 
@@ -1167,7 +1194,7 @@ SWITCH_STANDARD_APP(conference_function)
 				, gconfig.first_timeout, gconfig.digit_timeout, gconfig.abs_timeout, input_callback_function);
 
 			//send_image_response(session, imagePath);
-			switch_channel_set_variable(channel, "conference_id", buf_account);
+			switch_channel_set_variable(channel, "iris_conference_id", buf_account);
 			{
 				switch_core_media_lock_video_file(session, SWITCH_RW_READ);
 
@@ -1189,7 +1216,7 @@ SWITCH_STANDARD_APP(conference_function)
 
 			//	switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 			//}
-			switch_channel_set_variable(channel, "conference_passwd", buf_passwd);
+			switch_channel_set_variable(channel, "iris_conference_passwd", buf_passwd);
 
 			switch_memory_pool_t* pool = switch_core_session_get_pool(session);
 			uint64_t timestamp = switch_micro_time_now();
@@ -1210,7 +1237,7 @@ SWITCH_STANDARD_APP(conference_function)
 				if (result != SWITCH_STATUS_SUCCESS)
 				{
 					user_data.flags &= ~(AUTH_DTMF_PASSWD);
-					user_data.flags |= (AUTH_DTMF_FAILED & AUTH_DTMF_FAILED_CHANGED);
+					user_data.flags |= (AUTH_DTMF_FAILED | AUTH_DTMF_FAILED_CHANGED);
 				}
 				switch_core_media_unlock_video_file(session, SWITCH_RW_READ);
 			}

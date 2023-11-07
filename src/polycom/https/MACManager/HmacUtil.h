@@ -1,13 +1,13 @@
 #pragma once
 
-#pragma comment(lib,"Crypt32.lib")
+//#pragma comment(lib,"Crypt32.lib")
 
 #include <iostream>
 #include <vector>
 #include <string>
-#include <Windows.h>
-#include <wincrypt.h>
-#include <stdexcept>
+//#include <Windows.h>
+//#include <wincrypt.h>
+//#include <stdexcept>
 
 #include "MacEngine.h"
 #include "HelperUtil.h"

@@ -1,4 +1,4 @@
-#include "stdafx.h"
+//#include "stdafx.h"
 #include "HmacUtil.h"
 
 const int HmacUtil::MAX_URL_LENGTH = 255;
@@ -33,7 +33,7 @@ std::string HmacUtil::appendMsgPadAndMd(const std::string& url, const std::strin
 
 std::string HmacUtil::createHmac(const std::string& key, const std::string& message)
 {
-	MacEngine macEngine;
+	native::MacEngine macEngine;
 	std::string md = macEngine.getMdString((unsigned char*)message.c_str(), message.length(), (unsigned char*)key.c_str(), key.length());
 	
 	return md;	

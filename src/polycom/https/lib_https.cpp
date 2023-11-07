@@ -62,8 +62,8 @@ switch_status_t polycom_htts_create(const PolycomCreateParam* param, PolycomCrea
 		const char* URL = param->url;
 
 		char* macUrl = NULL;
-		size_t encryptedStrBufferSize = 0;
-
+		size_t encryptedStrBufferSize = 0; 
+		 
 		pManager->getEncryptUrl(URL, NULL, &encryptedStrBufferSize);
 		macUrl = new char[encryptedStrBufferSize]();
 

@@ -7,21 +7,19 @@
 #include <string>
 #include <map>
 
+
 class HelperUtil
 {
-private:
-	static LONGLONG convertFileTimeToPosix(FILETIME& ft);
-
 public:
 	static const std::string PERCENT;
 	static const std::string QUESTION;
 	static const std::string AMPERSAND;
 	static const std::string EQUAL;
 
-	static std::string convertToString(DWORD& value);
+	static std::string convertToString(std::uint32_t& value);
 
-	static void throwErrorWithMessage(std::string& message);
-	static void throwErrorFromMethod(std::string& methodName);
+	//static void throwErrorWithMessage(std::string& message);
+	//static void throwErrorFromMethod(std::string& methodName);
 
 	/**
 	 * Returns the current time in millisecond.

@@ -1,12 +1,21 @@
-#include "stdafx.h"
 #include "HelperUtil.h"
+
+#ifndef _WINDOWS
+#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <sys/time.h>
+#else
+#include <Windows.h>
+#endif // !_WINDOWS
 
 const std::string HelperUtil::PERCENT = "%";
 const std::string HelperUtil::QUESTION = "?";
 const std::string HelperUtil::AMPERSAND = "&";
 const std::string HelperUtil::EQUAL = "=";
 
-LONGLONG HelperUtil::convertFileTimeToPosix(FILETIME& ft)
+#ifdef _WINDOWS
+static LONGLONG  convertFileTimeToPosix(FILETIME& ft)
 {
 	const LONGLONG UNIX_EPOCH_DIFF = 116444736000000000LL;
 	LARGE_INTEGER date, adjust;
@@ -19,36 +28,45 @@ LONGLONG HelperUtil::convertFileTimeToPosix(FILETIME& ft)
 	// Convert back from 100-nanoseconds to milliseconds
 	return date.QuadPart / 10000;
 }
-
-std::string HelperUtil::convertToString(DWORD& value)
-{
-	std::stringstream ss;
-	ss << value;
-	return ss.str();
-}
-
-void HelperUtil::throwErrorWithMessage(std::string& message)
-{
-	std::runtime_error exception(message);
-	throw (exception);
-}
-
-void HelperUtil::throwErrorFromMethod(std::string& methodName)
-{
-	DWORD error = GetLastError();
-	std::string message = "Error in " + methodName + " 0x" + HelperUtil::convertToString(error);
-	HelperUtil::throwErrorWithMessage(message);
-}
-
 std::string HelperUtil::getTimeInMillis()
 {
 	FILETIME ft_now;
 	GetSystemTimeAsFileTime(&ft_now);
-	LONGLONG ll_now = HelperUtil::convertFileTimeToPosix(ft_now);
+	LONGLONG ll_now = convertFileTimeToPosix(ft_now);
 	std::ostringstream oss;
 	oss << ll_now;
 	return oss.str();
 }
+#else
+std::string HelperUtil::getTimeInMillis() {
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	ostringstream oss;
+	oss << tv.tv_sec << setfill('0') << setw(3) << (tv.tv_usec / 1000);
+	return oss.str();
+}
+
+#endif // !
+
+
+std::string HelperUtil::convertToString(std::uint32_t& value)
+{
+	return std::to_string(value);
+}
+//
+//void HelperUtil::throwErrorWithMessage(std::string& message)
+//{
+//	std::runtime_error exception(message);
+//	throw (exception);
+//}
+
+//void HelperUtil::throwErrorFromMethod(std::string& methodName)
+//{
+//	DWORD error = GetLastError();
+//	std::string message = "Error in " + methodName + " 0x" + HelperUtil::convertToString(error);
+//	HelperUtil::throwErrorWithMessage(message);
+//}
+
 
 std::string HelperUtil::concatenateString(const std::string& prefix, const std::string& suffix)
 {

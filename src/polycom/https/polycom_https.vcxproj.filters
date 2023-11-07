@@ -21,9 +21,6 @@
     <ClCompile Include="MACManager\SHA1.cpp">
       <Filter>MACManager</Filter>
     </ClCompile>
-    <ClCompile Include="MACManager\stdafx.cpp">
-      <Filter>MACManager</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auth_https.h" />
@@ -48,12 +45,6 @@
       <Filter>MACManager</Filter>
     </ClInclude>
     <ClInclude Include="MACManager\SHA1.h">
-      <Filter>MACManager</Filter>
-    </ClInclude>
-    <ClInclude Include="MACManager\stdafx.h">
-      <Filter>MACManager</Filter>
-    </ClInclude>
-    <ClInclude Include="MACManager\targetver.h">
       <Filter>MACManager</Filter>
     </ClInclude>
   </ItemGroup>

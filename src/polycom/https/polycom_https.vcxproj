@@ -105,32 +105,32 @@
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-openh264|x64'">
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|x64'">
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-openh264|x64'">
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-x264|x64'">
     <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)$(PlatformName)\$(Configuration)\</OutDir>
-    <IntDir>(PlatformName)\$(Configuration)\</IntDir>
+    <IntDir>$(PlatformName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug-x264|Win32'">
     <ClCompile>
@@ -289,7 +289,6 @@
     <ClCompile Include="MACManager\MacEngine.cpp" />
     <ClCompile Include="MACManager\MACManager.cpp" />
     <ClCompile Include="MACManager\SHA1.cpp" />
-    <ClCompile Include="MACManager\stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auth_https.h" />
@@ -302,8 +301,6 @@
     <ClInclude Include="MACManager\MacEngine.h" />
     <ClInclude Include="MACManager\MACManager.h" />
     <ClInclude Include="MACManager\SHA1.h" />
-    <ClInclude Include="MACManager\stdafx.h" />
-    <ClInclude Include="MACManager\targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\w32\Library\FreeSwitchCore.2017.vcxproj">
